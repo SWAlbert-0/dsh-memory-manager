@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 let code = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8');
-code = code.replace('exports.MemoryPage = MemoryPage;', 'exports.probe = { MemoryForm, QualityPanel, AgentsPanel, MemoryRow, ProfilePanel }; exports.MemoryPage = MemoryPage;');
+code = code.replace('exports.MemoryPage = MemoryPage;', 'exports.probe = { MemoryForm, QualityPanel, AgentsPanel, MemoryRow, ProfilePanel, Modal }; exports.MemoryPage = MemoryPage;');
 let cells = [], cursor = 0, queued = [], exported, intervals = new Map(), timerId = 0;
 let approvals = [], approve = true, writes = [], ruleFile = '旧规则', mockedState;
 const initial = () => ({ ok: true, settings: { strategy: 'enhanced', inject: true, injectMode: 'summary', strategyRules: [] }, profile: { content: '旧画像', generatedAt: 1 }, memories: [{ id: 'old', text: '旧事实', kind: 'semantic', updatedAt: 1 }], pending: [] });
@@ -29,6 +29,7 @@ function nodes(tree) { if (!tree || typeof tree !== 'object') return []; return 
 const text = tree => tree && typeof tree === 'object' ? (tree.children || []).map(text).join('') : String(tree ?? '');
 function find(tree, predicate) { const node = nodes(tree).find(predicate); assert.ok(node, 'expected node'); return node; }
 const button = (tree, label) => find(tree, n => n.type === 'button' && text(n) === label);
+const visibilityButton = (tree, label) => find(tree, n => n.type === 'button' && n.props['aria-label'] === '可见性：' + label);
 const tick = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 let passed = 0;
 async function test(label, run) { reset(); await run(); console.log('PASS ' + label); passed++; }
@@ -90,8 +91,8 @@ await test('V08 hidden filter chip filters the management list and visibility to
  await visRow.props.onToggleVisibility(visRow.props.rec);
  assert.deepEqual(writes.at(-1), { action: 'update', payload: { id: 'vis', patch: { visibility: 'hidden' } } });
  tree = render(exported.MemoryPage);
- button(tree, '仅看已隐藏').props.onClick(); tree = render(exported.MemoryPage);
- assert.equal(button(tree, '仅看已隐藏').props['aria-pressed'], true);
+ visibilityButton(tree, '已隐藏').props.onClick(); tree = render(exported.MemoryPage);
+ assert.equal(visibilityButton(tree, '已隐藏').props['aria-pressed'], true);
  assert.ok(text(tree).includes('显示 1 / 2 条'));
 });
 await test('V09 hidden card shows the badge and a pressed restore toggle', async () => {
@@ -148,10 +149,43 @@ await test('V15 stale profile warning uses the high-contrast text color', async 
 await test('V16 hidden filter empty state explains and offers a way back', async () => {
  mockedState.memories = [{ id: 'vis', text: '可见事实', kind: 'semantic', updatedAt: 1, visibility: 'visible' }];
  let tree = render(exported.MemoryPage); await tick(); tree = render(exported.MemoryPage);
- button(tree, '仅看已隐藏').props.onClick(); tree = render(exported.MemoryPage);
+ visibilityButton(tree, '已隐藏').props.onClick(); tree = render(exported.MemoryPage);
  assert.ok(text(tree).includes('还没有已隐藏的记忆'));
  button(tree, '查看全部记忆').props.onClick(); tree = render(exported.MemoryPage);
- assert.equal(button(tree, '仅看已隐藏').props['aria-pressed'], false);
+ assert.equal(visibilityButton(tree, '全部').props['aria-pressed'], true);
+});
+await test('V17 advanced options are a styled collapsible section', async () => {
+ const props = { strategy: 'enhanced', rules: [], onDirty() {}, onSubmit() {} };
+ let tree = render(exported.probe.MemoryForm, props);
+ const details = find(tree, n => n.type === 'details');
+ assert.equal(details.props.className, 'dshmem-advanced');
+ assert.equal(details.props.open, false);
+ assert.ok(text(details).includes('高级选项（格式与结构字段）'));
+ assert.ok(text(details).includes('格式、类别、人物关系等可选字段'));
+ details.props.onToggle({ currentTarget: { open: true } });
+ tree = render(exported.probe.MemoryForm, props);
+ assert.equal(find(tree, n => n.type === 'details').props.open, true);
+});
+await test('V18 add and review open as modal dialogs', async () => {
+ let tree = render(exported.MemoryPage); await tick(); tree = render(exported.MemoryPage);
+ button(tree, '+ 新增记忆').props.onClick(); tree = render(exported.MemoryPage);
+ let modal = find(tree, n => n.type === exported.probe.Modal);
+ assert.equal(modal.props.title, '新增记忆');
+ modal.props.onClose(); tree = render(exported.MemoryPage);
+ assert.ok(!nodes(tree).some(n => n.type === exported.probe.Modal));
+ button(tree, '审阅重复与矛盾').props.onClick(); tree = render(exported.MemoryPage);
+ modal = find(tree, n => n.type === exported.probe.Modal);
+ assert.equal(modal.props.title, '审阅重复与矛盾');
+});
+await test('V19 modal dialog exposes labelled dialog markup and a close button', async () => {
+ let closed = 0;
+ const tree = render(exported.probe.Modal, { title: '测试弹窗', onClose: () => closed++, children: '弹窗内容' });
+ const dialog = find(tree, n => n.props && n.props.role === 'dialog');
+ assert.equal(dialog.props['aria-modal'], 'true');
+ assert.ok(text(dialog).includes('测试弹窗'));
+ assert.ok(text(dialog).includes('弹窗内容'));
+ find(tree, n => n.type === 'button' && n.props['aria-label'] === '关闭弹窗').props.onClick();
+ assert.equal(closed, 1);
 });
 await test('R14 preview first, changed draft invalidates preview, exact content written', async () => {
  const props = { onDirty() {} }; let tree = render(exported.probe.AgentsPanel, props); await tick(); tree = render(exported.probe.AgentsPanel, props);

@@ -24,6 +24,7 @@
 | stage 15 | `client.stage15-before-hide-hint.js` | 2026-10-24 22:26 | 列表页「隐藏立即生效」提示之前 |
 | stage 16 | `client.stage16-before-design-p1.js` | 2026-10-24 22:52 | 设计评审 P1（对比度 / 状态操作 / 画像排版 / 窄屏筛选）之前 |
 | stage 17 | `client.stage17-before-design-p2.js` | 2026-10-24 23:06 | 设计评审 P2（筛选文案 / 空状态 / 设置 / 导入 / 表单 / 命中区 / 路径）之前 |
+| stage 18 | `client.stage18-before-ui-modal.js` | 2026-10-24 23:26 | 可见性三态 / 新增与审阅弹窗 / 高级选项样式之前 |
 
 ## 宿主端快照（lib/index.js）
 
