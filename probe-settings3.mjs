@@ -1,0 +1,28 @@
+import { spawn } from 'node:child_process';
+const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const PORT = 9243;
+const URL = process.argv[2];
+const PROFILE = 'D:\\Documents\\Temp\\chrome-dsh-profile-settings3';
+spawn(CHROME, ['--headless=new','--disable-gpu','--no-sandbox','--no-first-run','--remote-debugging-port='+PORT,'--remote-allow-origins=*','--user-data-dir='+PROFILE,'--window-size=1440,1000','about:blank'], { detached: true, stdio: 'ignore' }).unref();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+for (let i = 0; i < 60; i++) { try { const r = await fetch(`http://127.0.0.1:${PORT}/json/version`); if (r.ok) break; } catch {} await sleep(250); }
+const tab = await (await fetch(`http://127.0.0.1:${PORT}/json/new?${encodeURIComponent(URL)}`, { method: 'PUT' })).json();
+const ws = new WebSocket(tab.webSocketDebuggerUrl);
+let id = 0; const pending = new Map();
+await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); m.error ? p.rej(new Error(JSON.stringify(m.error))) : p.res(m.result); } };
+const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; pending.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result?.value;
+await send('Page.enable'); await send('Runtime.enable');
+await sleep(6000);
+const opened = await ev(`(() => { const b = document.querySelector('[aria-label="账号菜单"]'); if (b) { b.click(); return true } return false })()`);
+console.log('opened account menu:', opened);
+await sleep(900);
+console.log('menu items:', JSON.stringify(await ev(`[...document.querySelectorAll('[role=menuitem],button,a,[role=button]')].map(e => ({ t:(e.innerText||'').trim().slice(0,30), a:e.getAttribute('aria-label'), r:e.getAttribute('role') })).filter(x => x.t || x.a).slice(0,40)`), null, 2));
+const clickedSettings = await ev(`(() => { const b = [...document.querySelectorAll('[role=menuitem],button,a,[role=button]')].find(e => /设置|Settings/i.test((e.innerText||'')+(e.getAttribute('aria-label')||''))); if (b) { b.click(); return (b.innerText||b.getAttribute('aria-label')||'').trim() } return null })()`);
+console.log('clicked settings item:', clickedSettings);
+await sleep(1200);
+console.log('dialog?', await ev(`!!document.querySelector('[role=dialog]')`));
+console.log('dialog text:', String(await ev(`(document.querySelector('[role=dialog]')||document.body).innerText`)).slice(0, 900));
+await send('Browser.close').catch(() => {});
+process.exit(0);

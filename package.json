@@ -1,0 +1,41 @@
+{
+  "name": "dsh-memory-manager",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 长期记忆管理插件：Web 管理面板、自动注入、四种策略、用户画像、自动沉淀与 AGENTS.md 桥接",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "memory-manager",
+    "long-term-memory",
+    "react"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SWAlbert-0/dsh-memory-manager.git"
+  },
+  "homepage": "https://github.com/SWAlbert-0/dsh-memory-manager#readme",
+  "bugs": {
+    "url": "https://github.com/SWAlbert-0/dsh-memory-manager/issues"
+  },
+  "author": "SWAlbert-0",
+  "license": "MIT",
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
+  }
+}

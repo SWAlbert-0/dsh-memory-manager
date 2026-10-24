@@ -1,0 +1,25 @@
+import { spawn } from 'node:child_process';
+const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const PORT = 9245;
+const URL = process.argv[2];
+const PROFILE = 'D:\\Documents\\Temp\\chrome-dsh-profile-settings5';
+spawn(CHROME, ['--headless=new','--disable-gpu','--no-sandbox','--no-first-run','--remote-debugging-port='+PORT,'--remote-allow-origins=*','--user-data-dir='+PROFILE,'--window-size=1440,1000','about:blank'], { detached: true, stdio: 'ignore' }).unref();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+for (let i = 0; i < 60; i++) { try { const r = await fetch(`http://127.0.0.1:${PORT}/json/version`); if (r.ok) break; } catch {} await sleep(250); }
+const tab = await (await fetch(`http://127.0.0.1:${PORT}/json/new?${encodeURIComponent(URL)}`, { method: 'PUT' })).json();
+const ws = new WebSocket(tab.webSocketDebuggerUrl);
+let id = 0; const pending = new Map();
+await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
+ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); m.error ? p.rej(new Error(JSON.stringify(m.error))) : p.res(m.result); } };
+const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; pending.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params })); });
+const ev = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result?.value;
+await send('Page.enable'); await send('Runtime.enable');
+await sleep(6000);
+console.log('clicked:', await ev(`(() => { const b = document.querySelector('[aria-label="账号菜单"]'); if (!b) return false; b.click(); return true })()`));
+await sleep(1000);
+console.log('expanded:', await ev(`document.querySelector('[aria-label="账号菜单"]')?.getAttribute('aria-expanded')`));
+console.log('menus:', JSON.stringify(await ev(`[...document.querySelectorAll('[role=menu]')].map(m => ({ text: m.innerText, html: m.outerHTML.slice(0,300) }))`), null, 2));
+console.log('menuitems:', JSON.stringify(await ev(`[...document.querySelectorAll('[role=menuitem]')].map(m => m.innerText)`), null, 2));
+console.log('all visible text tail:', String(await ev('document.body.innerText')).slice(-500));
+await send('Browser.close').catch(() => {});
+process.exit(0);

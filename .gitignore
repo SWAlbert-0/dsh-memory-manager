@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+
+# 运行 / 调试产物
+*.log
+chrome-*/
+cj*.txt
+
+# 质量审查证据：截图与快照含真实记忆内容，不入库
+analysis/
+
+# 本地截图
+/*.png
+
+# DSH 源码摘录（非本包代码）
+tools-lib.js
+
+# 一次性迁移脚本（含本机绝对路径）
+cleanup-old-memory.mjs
