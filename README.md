@@ -25,10 +25,11 @@ dsh-memory-manager/
   package.json          # main = lib/index.js；dsh.client 声明 Web 客户端
   lib/index.js          # 宿主端：存储、工具、注入、HTTP 路由
   lib/client.js         # 客户端：侧边栏图标 + 管理页（React，无构建步骤）
-  test-api.mjs          # 端到端 API 测试
-  test-inject.mjs       # 注入逻辑单测
-  cdp-verify.mjs        # 无头 Chrome 验证侧边栏与面板
-  cdp-tabs.mjs          # 验证设置/导入导出页渲染
+  lib/shared.js         # 宿主/客户端共享的纯函数（校验、策略、检索、注入）
+  lib/rollback/         # 历史快照（回退用，见该目录 README）
+  test/                 # 隔离测试：p0 / p1 / p1-client
+  check-demo.mjs        # 浏览器端到端验证（CDP）
+  verify-*.mjs          # 按需的定向验证脚本
   install.mjs           # 把插件挂到指定 profile（默认只打印，不写入）
 ```
 
