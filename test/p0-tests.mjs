@@ -333,6 +333,13 @@ try {
     assert.equal(shown.ok, true); assert.equal(s.profile.stale, true);
     assert.ok(probe.digest(s.memories, s.settings, s.profile).text.includes('SECRET_FACT'));
   });
+  await test('V04b loading a store whose hidden record postdates the profile marks it stale', async () => {
+    const seed = (generatedAt) => ({ memories: [{ id: 'h', text: 'H', visibility: 'hidden', updatedAt: 100 }], profile: { content: 'OLD', generatedAt, stale: false } });
+    const older = await isolated(seed(50));
+    assert.equal(older.probe.getState().profile.stale, true);
+    const newer = await isolated(seed(200));
+    assert.equal(newer.probe.getState().profile.stale, false);
+  });
   await test('V05 extraction context omits hidden facts', async () => {
     const { probe } = await isolated(); const s = probe.getState();
     s.memories = [record(probe, 'h', 'HIDDEN_EXTRACT_FACT', { visibility: 'hidden' }), record(probe, 'v', 'VISIBLE_EXTRACT_FACT')];
@@ -371,6 +378,28 @@ try {
     assert.deepEqual(preview.preview, { newCount: 0, updateCount: 0, keptCount: 1, invalidCount: 0, settingsChanged: false });
     const hiddenPreview = await rpc(probe, 'preview-import', { data: [{ ...legacy, visibility: 'hidden' }] });
     assert.equal(hiddenPreview.preview.updateCount, 1);
+  });
+  await test('V11 stale profile update requires the current revision', async () => {
+    const { probe } = await isolated(); const s = probe.getState();
+    s.memories = [record(probe, 'fact', 'PROFILE_FACT')];
+    s.profile = { content: 'OLD_PROFILE', generatedAt: 1, stale: false };
+    const ctx = host(); probe.registerTools(ctx); probe.registerRoutes(ctx);
+    const list = ctx.registeredTools.get('memory_list');
+    const update = ctx.registeredTools.get('memory_update_profile');
+    const base = (await list.execute({})).revision;
+    await rpc(probe, 'update', { id: 'fact', patch: { visibility: 'hidden' } });
+    assert.equal(s.profile.stale, true);
+    const staleRevision = await update.execute({ content: 'LEAK_PROFILE', basedOnRevision: base });
+    assert.equal(staleRevision.ok, false); assert.equal(staleRevision.error, 'profile-outdated');
+    assert.equal(s.profile.content, 'OLD_PROFILE'); assert.equal(s.profile.stale, true);
+    const missing = await update.execute({ content: 'LEAK_PROFILE' });
+    assert.equal(missing.ok, false); assert.equal(missing.error, 'profile-outdated');
+    const current = (await list.execute({})).revision;
+    assert.ok(current > base);
+    const accepted = await update.execute({ content: 'CLEAN_PROFILE', basedOnRevision: current });
+    assert.equal(accepted.ok, true); assert.equal(s.profile.stale, false); assert.equal(s.profile.content, 'CLEAN_PROFILE');
+    const res = await ctx.routes.get('/api/memory/profile').fetch(new Request('http://isolated/api/memory/profile', { method: 'POST', body: JSON.stringify({ content: 'HTTP_LEAK', basedOnRevision: base }) }));
+    assert.equal(res.status, 409);
   });
   await test('client requires successful preview and confirmation before import; success color updated', async () => {
     const flow = client.slice(client.indexOf('const doImport ='), client.indexOf('return h("div", null, [', client.indexOf('const doImport =')));

@@ -19,6 +19,7 @@
 | stage 10 | `client.stage8-before-p0fix.js` | 2026-10-24 01:29 | P0 安全可靠性修复之前 |
 | stage 11 | `client.stage10-before-p1.js` | 2026-10-24 02:49 | P1 体验提升之前 |
 | stage 12 | `client.stage12-before-visibility.js` | 2026-10-24 21:33 | 记录 `visibility` 字段（visible / hidden）之前 |
+| stage 13 | `client.stage13-before-profile-revision.js` | 2026-10-24 21:51 | 画像写入 revision 乐观锁之前 |
 
 ## 宿主端快照（lib/index.js）
 
@@ -32,6 +33,7 @@
 | host stage 5 | `host.stage5-before-p0fix.js` | 2026-10-24 01:29 | P0 安全修复之前 |
 | host stage 5.1 | `host.stage5-before-p1.js` | 2026-10-24 02:49 | P1 体验提升之前 |
 | host stage 6 | `host.stage6-before-visibility.js` | 2026-10-24 21:33 | 记录 `visibility` 字段（visible / hidden）之前 |
+| host stage 7 | `host.stage7-before-profile-revision.js` | 2026-10-24 21:51 | 画像写入 revision 乐观锁之前 |
 
 ## 回退命令
 
