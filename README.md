@@ -82,7 +82,7 @@ dsh-memory-manager/
 然后重启 DSH（`cordis.patch.yml` 不是热加载的）。也可以用 `install.mjs`：
 
 ```bat
-node install.mjs --profile "C:\Users\Albert\.dsh\profiles\web\cordis.patch.yml"
+node install.mjs --profile "%USERPROFILE%\.dsh\profiles\web\cordis.patch.yml"
 :: 默认只打印将要写入的内容；加 --write 才真正写入（会备份原文件）
 ```
 
