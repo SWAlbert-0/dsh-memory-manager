@@ -1,6 +1,6 @@
 # Task: beautify the dsh-memory plugin UI to match DSH's design system
 
-You have **write access** to this directory. Work directly in `D:\Documents\Temp\dsh-memory-plugin`.
+You have **write access** to this directory. Work directly in `D:\Dev\Projects\Personal\dsh-plugin\dsh-memory-manager`.
 
 ## Load the frontend design skills first
 

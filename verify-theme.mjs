@@ -34,14 +34,14 @@ await ev(`document.body.removeAttribute('data-ds-dark-theme'); document.document
 await sleep(500);
 const light = await surfaces();
 const lightShot = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\theme-light.png', Buffer.from(lightShot.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\theme-light.png', Buffer.from(lightShot.data, 'base64'));
 
 // force dark
 await ev(`document.body.setAttribute('data-ds-dark-theme',''); document.documentElement.style.colorScheme='dark'; true`);
 await sleep(500);
 const dark = await surfaces();
 const darkShot = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\theme-dark.png', Buffer.from(darkShot.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\theme-dark.png', Buffer.from(darkShot.data, 'base64'));
 
 console.log('LIGHT', JSON.stringify(light, null, 2));
 console.log('DARK', JSON.stringify(dark, null, 2));

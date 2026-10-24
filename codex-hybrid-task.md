@@ -95,7 +95,7 @@ function resolveStrategy(rec, globalStrategy, rules) {
 
 1. `node --check lib/index.js && node --check lib/client.js`
 2. **宿主逻辑驱动测试**（不启动服务器、不碰真实数据）：写一个临时脚本，
-   `import('file:///D:/Documents/Temp/dsh-memory-plugin/lib/index.js')`，构造 fake ctx
+   `import('file:///D:/Dev/Projects/Personal/dsh-plugin/dsh-memory-manager/lib/index.js')`，构造 fake ctx
    （`logger/tools.register→Map`、`connection.fetch.register→Map`、`on(){}、effect(fn){fn()}`），
    `mod.apply(ctx)` 后：
    - 先设 `process.env.DSH_MEMORY_DIR` 为临时目录（脚本开头，import 之前），确保**不读写** `%APPDATA%\dsh-memory`

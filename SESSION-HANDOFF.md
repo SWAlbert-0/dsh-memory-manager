@@ -7,7 +7,7 @@
 
 `dsh-memory-manager` 是一个 DSH 插件（宿主端 + Web 客户端），实现用户长期记忆管理。包名与仓库名为 `dsh-memory-manager`，运行时标识与数据目录仍为 `dsh-memory`。
 
-- **路径**：`D:\Documents\Temp\dsh-memory-plugin\`
+- **路径**：`D:\Dev\Projects\Personal\dsh-plugin\dsh-memory-manager\`
 - **宿主端**：`lib/index.js`（~530 行，零外部依赖，只用 Node 内置）
 - **客户端**：`lib/client.js`（~1100 行，React 无构建，`window.__ModuleLoader__.load` 包装）
 - **共享模块**：`lib/shared.js`（宿主端函数拆分）
@@ -97,7 +97,7 @@
 ## 验证命令
 
 ```bat
-cd /d D:\Documents\Temp\dsh-memory-plugin
+cd /d D:\Dev\Projects\Personal\dsh-plugin\dsh-memory-manager
 node --check lib\client.js
 node --check lib\index.js
 node test\p0-tests.mjs

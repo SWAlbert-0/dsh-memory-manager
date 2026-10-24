@@ -58,6 +58,6 @@ await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: slowScript.
 await send('Page.reload'); await sleep(5500);
 
 const shot = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\p2-desktop-light.png', Buffer.from(shot.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\p2-desktop-light.png', Buffer.from(shot.data, 'base64'));
 await send('Browser.close').catch(() => {});
 process.exit(0);

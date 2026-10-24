@@ -31,7 +31,7 @@ await sleep(1000);
 const panel = await ev(`(() => { const d = document.querySelector('[role=dialog]'); return d ? { hasTabs: d.innerText.includes('策略与设置'), hasCount: /记忆（\\d+）/.test(d.innerText), sample: d.innerText.slice(0, 500) } : null })()`);
 console.log('panel:', JSON.stringify(panel, null, 2));
 const shot = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\settings-section-memory.png', Buffer.from(shot.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\settings-section-memory.png', Buffer.from(shot.data, 'base64'));
 // restore both
 await ev(`fetch('/api/memory/rpc',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action:'settings',payload:{entryPlacement:'both'}})})`);
 await send('Browser.close').catch(() => {});

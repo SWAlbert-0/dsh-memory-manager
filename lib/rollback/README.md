@@ -33,7 +33,7 @@
 
 ## 回退命令
 
-在 `dsh-memory-plugin` 目录下，把目标快照复制回对应文件即可（刷新试玩页生效；宿主端变更需重启 DSH）：
+在 `dsh-memory-manager` 目录下，把目标快照复制回对应文件即可（刷新试玩页生效；宿主端变更需重启 DSH）：
 
 ```bat
 copy /Y lib\rollback\client.stage11-before-p1.js lib\client.js

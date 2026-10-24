@@ -44,7 +44,7 @@
 
 ## 约束
 
-- **只分析，不改** `lib/client.js` 或任何源码；截图/报告可写到 `D:\Documents\Temp\dsh-memory-plugin\analysis\` 下。
+- **只分析，不改** `lib/client.js` 或任何源码；截图/报告可写到 `D:\Dev\Projects\Personal\dsh-plugin\dsh-memory-manager\analysis\` 下。
 - 必须符合 DSH 主题：复用 `--dsw-*` token，不引入新品牌色、外部字体或依赖。
 - 保持中文界面与现有信息不变。
 - 输出**中文**报告，结构化、可执行、带优先级。

@@ -10,7 +10,7 @@ process.env.DSH_MEMORY_DIR = join(root, 'store');
 process.env.USERPROFILE = join(root, 'home');
 await mkdir(process.env.USERPROFILE, { recursive: true });
 
-const mod = await import('file:///D:/Documents/Temp/dsh-memory-plugin/lib/index.js');
+const mod = await import('file:///D:/Dev/Projects/Personal/dsh-plugin/dsh-memory-manager/lib/index.js');
 const tools = new Map();
 const routes = new Map();
 const ctx = {

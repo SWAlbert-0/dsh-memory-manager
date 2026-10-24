@@ -51,7 +51,7 @@ console.log('--- panel text ---');
 console.log(tail);
 
 const light = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\verify-light.png', Buffer.from(light.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\verify-light.png', Buffer.from(light.data, 'base64'));
 
 // Switch to dark theme and capture again.
 await evaluate(`document.body.setAttribute('data-ds-dark-theme',''); document.documentElement.style.colorScheme='dark'; true`);
@@ -60,7 +60,7 @@ const darkText = String(await evaluate('document.body.innerText'));
 console.log('--- dark panel tail ---');
 console.log(darkText.split('\n').filter(Boolean).slice(-25).join('\n'));
 const dark = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\verify-dark.png', Buffer.from(dark.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\verify-dark.png', Buffer.from(dark.data, 'base64'));
 
 // Report a few computed surfaces to confirm token-driven colors.
 const styles = await evaluate(`(() => {

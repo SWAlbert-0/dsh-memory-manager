@@ -19,7 +19,7 @@ await sleep(5500);
 await ev(`(() => { const b = document.querySelector('[aria-label="记忆"]'); if (b) b.click(); return !!b })()`);
 await sleep(1200);
 
-const shot = async (name) => { const s = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\' + name, Buffer.from(s.data, 'base64')); };
+const shot = async (name) => { const s = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\' + name, Buffer.from(s.data, 'base64')); };
 await shot('p0p1-desktop-light.png');
 const lightMeta = await ev(`getComputedStyle(document.querySelector('.dshmem-meta')).color`);
 const focus = await ev(`(() => { const i = document.querySelector('input[aria-label="搜索记忆"]'); i.focus(); const s = getComputedStyle(i); return { outline: s.outlineColor + ' ' + s.outlineWidth, offset: s.outlineOffset } })()`);

@@ -62,7 +62,7 @@ await sleep(300);
 console.log('after +N:', await ev(`(() => { const c = ${longCardSel}; return { tags: [...c.querySelectorAll('.dshmem-tag')].map(x => x.innerText), hasCollapse: [...c.querySelectorAll('button')].some(b => b.innerText.trim() === '收起') } })()`));
 
 const shot1 = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\p0p1-1440-light.png', Buffer.from(shot1.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\p0p1-1440-light.png', Buffer.from(shot1.data, 'base64'));
 
 // sticky check
 const beforeTop = await ev(`Math.round(document.querySelector('.dshmem-filter-bar').getBoundingClientRect().top)`);
@@ -103,7 +103,7 @@ const narrowOpen = await ev(`(() => {
 })()`);
 console.log('NARROW OPEN', JSON.stringify(narrowOpen, null, 2));
 const shot2 = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\p0p1-390-light.png', Buffer.from(shot2.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\p0p1-390-light.png', Buffer.from(shot2.data, 'base64'));
 
 // cleanup temp record
 const removed = await ev(`fetch('/api/memory/state',{credentials:'same-origin'}).then(r=>r.json()).then(async j => { const ids = j.memories.filter(m => (m.tags||[]).some(t => t.startsWith('长文测试'))).map(m => m.id); for (const id of ids) await fetch('/api/memory/rpc',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete',payload:{id}})}); return ids.length })`);

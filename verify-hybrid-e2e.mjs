@@ -67,7 +67,7 @@ const settingsUI = await ev(`(() => {
 })()`);
 console.log('settings UI:', JSON.stringify(settingsUI));
 const shot = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\hybrid-settings-light.png', Buffer.from(shot.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\hybrid-settings-light.png', Buffer.from(shot.data, 'base64'));
 
 // 6. cleanup
 const cleaned = await ev(`fetch('/api/memory/state',{credentials:'same-origin'}).then(r=>r.json()).then(async j => { const ids = j.memories.filter(m => (m.tags||[]).includes('混合策略测试')).map(m=>m.id); for (const id of ids) await fetch('/api/memory/rpc',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({action:'delete',payload:{id}})}); return ids.length })`);

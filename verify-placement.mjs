@@ -44,7 +44,7 @@ for (const placement of ['both', 'sidebar', 'settings']) {
   console.log(`  placement=${placement} sidebar=${sidebar} settingsOpened=${opened} settingsNavHasMemory=${nav}`);
   if (placement !== 'sidebar') {
     const shot = await send('Page.captureScreenshot', { format: 'png' });
-    writeFileSync(`D:\\Documents\\Temp\\dsh-memory-plugin\\settings-${placement}.png`, Buffer.from(shot.data, 'base64'));
+    writeFileSync(`D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\settings-${placement}.png`, Buffer.from(shot.data, 'base64'));
   }
   await closeSettings();
 }

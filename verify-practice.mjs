@@ -39,7 +39,7 @@ const info = await ev(`(() => {
 })()`);
 console.log(JSON.stringify(info, null, 2));
 const shot = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\practice-light.png', Buffer.from(shot.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\practice-light.png', Buffer.from(shot.data, 'base64'));
 
 const count = () => ev(`fetch('/api/memory/state',{credentials:'same-origin'}).then(r=>r.json()).then(j=>j.memories.length)`);
 console.log('count before:', await count());
@@ -55,6 +55,6 @@ console.log('count after clear:', await count());
 await ev(`document.body.setAttribute('data-ds-dark-theme',''); true`);
 await sleep(500);
 const dark = await send('Page.captureScreenshot', { format: 'png' });
-writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\practice-dark.png', Buffer.from(dark.data, 'base64'));
+writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\practice-dark.png', Buffer.from(dark.data, 'base64'));
 await send('Browser.close').catch(() => {});
 process.exit(0);

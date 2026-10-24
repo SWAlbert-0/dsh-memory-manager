@@ -79,7 +79,7 @@ const main = async () => {
   console.log(String(panel).slice(0, 1500));
 
   const shot = await send('Page.captureScreenshot', { format: 'png' });
-  writeFileSync('D:\\Documents\\Temp\\dsh-memory-plugin\\verify-shot.png', Buffer.from(shot.data, 'base64'));
+  writeFileSync('D:\\Dev\\Projects\\Personal\\dsh-plugin\\dsh-memory-manager\\verify-shot.png', Buffer.from(shot.data, 'base64'));
   console.log('screenshot saved');
 
   await send('Browser.close').catch(() => {});
