@@ -1,6 +1,6 @@
 # dsh-memory-manager 会话交接文档
 
-> 交接时间：2026-10-24 00:00（UTC+8）
+> 交接时间：2026-10-24 21:15（UTC+8）
 > 交接人会话：dsh-memory-manager 插件开发全流程
 
 ## 项目概述
@@ -8,10 +8,12 @@
 `dsh-memory-manager` 是一个 DSH 插件（宿主端 + Web 客户端），实现用户长期记忆管理。包名与仓库名为 `dsh-memory-manager`，运行时标识与数据目录仍为 `dsh-memory`。
 
 - **路径**：`D:\Dev\Projects\Personal\dsh-plugin\dsh-memory-manager\`
+- **仓库**：https://github.com/SWAlbert-0/dsh-memory-manager （public，分支 `main`）
+- **npm 包名**：`dsh-memory-manager`（尚未发布；`npm pack` 仅含 `lib/*.js` + README + LICENSE）
 - **宿主端**：`lib/index.js`（~530 行，零外部依赖，只用 Node 内置）
 - **客户端**：`lib/client.js`（~1100 行，React 无构建，`window.__ModuleLoader__.load` 包装）
 - **共享模块**：`lib/shared.js`（宿主端函数拆分）
-- **测试实例**：端口 56001，隔离 `DSH_HOME=D:\Documents\Temp\dsh-test-home`
+- **测试实例**：端口 56001，隔离 `DSH_HOME=D:\Dev\Projects\Personal\dsh-plugin\.dsh-test-home`
 - **存储**：`%APPDATA%\dsh-memory\memory.json`（44 条真实记忆，未动）
 - **回退点**：`lib/rollback/`（stage 0–11 + host stage 0–5.1，命名规则见该目录 README.md）
 
@@ -89,7 +91,9 @@
 | `lib/rollback/` | 回退点（stage 0–11 + host stage 0–5.1） |
 | `lib/rollback/README.md` | 回退点清单 + 恢复命令 |
 | `test/p0-tests.mjs` | P0 隔离测试（17/17） |
-| `verify-*.mjs` | 浏览器验证脚本（CDP） |
+| `test/p1-tests.mjs` / `test/p1-client-tests.mjs` | P1 宿主 / 客户端测试（9/9、5/5） |
+| `check-demo.mjs` | 浏览器端到端验证（CDP，5 标签 + 窄屏 + 简化视图已移除断言） |
+| `verify-*.mjs` | 定向验证脚本（CDP） |
 | `THEME-TOKENS.md` | DSH 设计 token 参考 |
 | `开发计划.md` | 开发计划（待做 / 已决策 / 风险） |
 | `README.md` | 完整文档 |
@@ -101,6 +105,9 @@ cd /d D:\Dev\Projects\Personal\dsh-plugin\dsh-memory-manager
 node --check lib\client.js
 node --check lib\index.js
 node test\p0-tests.mjs
+node test\p1-tests.mjs
+node test\p1-client-tests.mjs
+node check-demo.mjs "http://127.0.0.1:56001/?token=<token>"
 node verify-p0-fixes.mjs "http://127.0.0.1:56001/?token=<token>"
 node verify-placement.mjs "http://127.0.0.1:56001/?token=<token>"
 node verify-filters.mjs "http://127.0.0.1:56001/?token=<token>"
@@ -110,8 +117,8 @@ node verify-hybrid-e2e.mjs "http://127.0.0.1:56001/?token=<token>"
 ## 试玩实例
 
 ```bat
-cd /d D:\Documents\Temp
-set DSH_HOME=D:\Documents\Temp\dsh-test-home
+cd /d D:\Dev\Projects\Personal\dsh-plugin
+set DSH_HOME=D:\Dev\Projects\Personal\dsh-plugin\.dsh-test-home
 "D:\Dev\Software\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" web --port 56001 --no-open
 :: 输出 URL 带 token，用浏览器打开
 ```
@@ -171,3 +178,10 @@ R05–R19 已全部实现，见 `analysis/p1-report.zh-CN.md`。
 6.​ 写入时检测 U+FFFD（`validateRecord` 已实现）
 7.​ `client.js` 第 2 行的 bundle id 必须等于 `package.json` 的 `name`（当前 `dsh-memory-manager`）；改名或回退旧快照后不改这里，客户端会报 `duplicate factory registration`、入口不激活
 8.​ 包名/仓库名是 `dsh-memory-manager`，但运行时标识与存储目录仍是 `dsh-memory`（`%APPDATA%\dsh-memory`），不要跟着改，否则丢已有记忆
+
+## 仓库约定
+
+- `.gitignore` 排除 `analysis/`（含真实记忆的截图与快照）、根目录 `*.png`、`tools-lib.js`（DSH 源码摘录）
+- 一次性脚本与旧任务书放在 `analysis/legacy/`（本地保留、不进库）；仓库根只保留可复用入口
+- 提交前用 `git status` 确认没带入截图；`npm pack --dry-run` 应只有 6 个文件（3 个 `lib/*.js` + README + LICENSE + package.json）
+- 远端 `origin` = https://github.com/SWAlbert-0/dsh-memory-manager ，push 走 `gh` 凭据（仓库级 credential helper，未改全局配置）
