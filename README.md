@@ -304,6 +304,7 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 - 工具侧不提供「读取 hidden」的参数；`memory_write` 也不暴露 `visibility`；
 - 管理 RPC `search` 默认不含 hidden，只有显式 `includeHidden: true` 才返回；`memory_forget` 工具拒绝删除 hidden（管理界面仍可删除）；
 - 质量审阅「合并标签」不会把 hidden 行的 tags 并入 visible 记录；
+- 记忆列表页有一条非阻塞提示：隐藏立即生效，画像摘要会标记为待更新，Agent 更新画像时会按最新记忆重新生成；
 - 画像写入带 revision 乐观锁：`memory_list` / `memory_search` 返回 `revision`，`memory_update_profile` 在画像 stale 时必须携带该 revision，版本不匹配返回 `profile-outdated` 并拒绝写入，避免隐藏/删除前生成的旧摘要覆盖失效标记；加载旧库时若 hidden 记录的 `updatedAt` 不早于 `profile.generatedAt`，画像自动标记 stale；
 - 导入旧数据没有该字段时按 `visible` 处理；导出保留该字段；存储版本号不变（超集字段，`normalizeRecord` 兜底）；
 - 客户端：卡片上有「对 Agent 隐藏 / 恢复可见」开关与「已隐藏」徽标；筛选栏新增「已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。

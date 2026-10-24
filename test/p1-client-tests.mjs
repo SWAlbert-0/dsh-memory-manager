@@ -81,6 +81,7 @@ await test('V08 hidden filter chip filters the management list and visibility to
   { id: 'hid', text: '隐藏事实', kind: 'semantic', updatedAt: 1, visibility: 'hidden' },
  ];
  let tree = render(exported.MemoryPage); await tick(); tree = render(exported.MemoryPage);
+ assert.ok(text(tree).includes('隐藏会立即生效'));
  const rows = nodes(tree).filter(n => n.type === exported.probe.MemoryRow);
  assert.equal(rows.length, 2);
  const visRow = rows.find(n => n.props.rec.id === 'vis');

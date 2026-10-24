@@ -21,6 +21,7 @@
 | stage 12 | `client.stage12-before-visibility.js` | 2026-10-24 21:33 | 记录 `visibility` 字段（visible / hidden）之前 |
 | stage 13 | `client.stage13-before-profile-revision.js` | 2026-10-24 21:51 | 画像写入 revision 乐观锁之前 |
 | stage 14 | `client.stage14-before-hidden-boundaries.js` | 2026-10-24 22:03 | hidden 边界收紧（质量合并标签 / RPC 搜索 / 工具删除）之前 |
+| stage 15 | `client.stage15-before-hide-hint.js` | 2026-10-24 22:26 | 列表页「隐藏立即生效」提示之前 |
 
 ## 宿主端快照（lib/index.js）
 
