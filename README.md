@@ -93,7 +93,7 @@ node install.mjs --profile "C:\Users\Albert\.dsh\profiles\web\cordis.patch.yml"
 开发时可用隔离的 `DSH_HOME` 起一个实例，不影响真实的 `~/.dsh` 会话与设置：
 
 ```bat
-set DSH_HOME=D:\Documents\Temp\dsh-test-home
+set DSH_HOME=%USERPROFILE%\.dsh-test-home
 "<DSH 安装目录>\resources\runtime\cli\bin\dsh.cmd" web --port 56001 --no-open
 ```
 
