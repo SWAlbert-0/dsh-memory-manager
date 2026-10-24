@@ -169,3 +169,5 @@ R05–R19 已全部实现，见 `analysis/p1-report.zh-CN.md`。
 4.​ 宿主端变更需重启测试实例（客户端热加载即可）
 5.​ **不要在 Windows 终端用 curl 发中文 JSON**（GBK 编码会损坏数据），用 Node 脚本发 UTF-8
 6.​ 写入时检测 U+FFFD（`validateRecord` 已实现）
+7.​ `client.js` 第 2 行的 bundle id 必须等于 `package.json` 的 `name`（当前 `dsh-memory-manager`）；改名或回退旧快照后不改这里，客户端会报 `duplicate factory registration`、入口不激活
+8.​ 包名/仓库名是 `dsh-memory-manager`，但运行时标识与存储目录仍是 `dsh-memory`（`%APPDATA%\dsh-memory`），不要跟着改，否则丢已有记忆

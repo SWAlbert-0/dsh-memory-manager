@@ -49,6 +49,7 @@ node --check lib\index.js
 
 ## 说明
 
+- **`client.js` 第 2 行的 bundle id 必须与 `package.json` 的 `name` 一致**（当前为 `dsh-memory-manager`）。回退到 2026-10-24 改名之前的快照后，需把该行改成 `id: "dsh-memory-manager"`，否则客户端会报 `duplicate factory registration` 且入口不激活。
 - 快照只包含代码；存储数据（`%APPDATA%\dsh-memory\memory.json`）不会被任何回退操作修改。
 - 新增阶段时按 `client.stageN-before-<改动名>.js` / `host.stageN-before-<改动名>.js` 命名，并在上表补一行。
 - 混合策略实验（stage 5 / host stage 0）曾实现后回退；stage 6 / host stage 1 是第二次实现前的快照。

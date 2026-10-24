@@ -10,7 +10,9 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "lib",
+    "lib/index.js",
+    "lib/client.js",
+    "lib/shared.js",
     "README.md",
     "LICENSE"
   ],
