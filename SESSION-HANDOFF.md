@@ -15,7 +15,7 @@
 - **共享模块**：`lib/shared.js`（宿主端函数拆分）
 - **测试实例**：端口 56001，隔离 `DSH_HOME=D:\Dev\Projects\Personal\dsh-plugin\.dsh-test-home`
 - **存储**：`%APPDATA%\dsh-memory\memory.json`（44 条真实记忆，未动）
-- **回退点**：`lib/rollback/`（stage 0–11 + host stage 0–5.1，命名规则见该目录 README.md）
+- **回退点**：`lib/rollback/`（stage 0–12 + host stage 0–6，命名规则见该目录 README.md）
 
 ## 已完成功能
 
@@ -23,6 +23,7 @@
 |---|---|
 | 四种策略 + 混合路由 | 全局默认 + 路由规则 + 每条覆盖（三级解析 `strategyOf`/`resolveStrategy`） |
 | 常驻记忆（pinned） | 全量注入 `<memory-rules>`，独立预算，UI 3px 边框标识 |
+| 记录可见性（hidden） | hidden 记录保留在库、管理界面可见可编辑可恢复；不进注入（pinned 之前过滤）/ 搜索 / 列表 / 画像 / 提取上下文 |
 | AGENTS.md 桥接 | 读写 `~/.dsh/AGENTS.md`，保存前备份，幂等检查 |
 | 自动沉淀 | `session/event` → `turn/end` → LLM 提取 → 待确认队列 |
 | 记忆列表筛选 | 关键词 + 类型/范围/标签 + 排序（更新/创建/重要性/频率） |
@@ -90,8 +91,8 @@
 | `lib/shared.js` | 宿主共享函数 |
 | `lib/rollback/` | 回退点（stage 0–11 + host stage 0–5.1） |
 | `lib/rollback/README.md` | 回退点清单 + 恢复命令 |
-| `test/p0-tests.mjs` | P0 隔离测试（17/17） |
-| `test/p1-tests.mjs` / `test/p1-client-tests.mjs` | P1 宿主 / 客户端测试（9/9、5/5） |
+| `test/p0-tests.mjs` | P0 隔离测试（24/24） |
+| `test/p1-tests.mjs` / `test/p1-client-tests.mjs` | P1 宿主 / 客户端测试（10/10、8/8） |
 | `check-demo.mjs` | 浏览器端到端验证（CDP，5 标签 + 窄屏 + 简化视图已移除断言） |
 | `verify-*.mjs` | 定向验证脚本（CDP） |
 | `THEME-TOKENS.md` | DSH 设计 token 参考 |
@@ -129,7 +130,6 @@ set DSH_HOME=D:\Dev\Projects\Personal\dsh-plugin\.dsh-test-home
 
 | 项目 | 说明 | 依赖 |
 |---|---|---|
-| 记录 `visibility` 字段 | visible / hidden | 无 |
 | 归档流程 | 会话删除 → 关联记忆归档 → 归档超时删除 | `sourceSessionId` + DSH 事件确认（DSH 无此事件，已确认） |
 | 自动淘汰 | 归档超 N 天 → 物理删除 | `status` 字段 |
 

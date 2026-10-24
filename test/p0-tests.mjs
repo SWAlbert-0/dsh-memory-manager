@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, readdir, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -276,6 +276,101 @@ try {
       }
       assert.equal((await tool.execute({ query: 'common' })).memories.length, 2);
     }
+  });
+  await test('V01 digest excludes hidden records before pinned; pinned+hidden is never injected', async () => {
+    const { probe } = await isolated();
+    const s = probe.getState();
+    const rows = [
+      record(probe, 'hp', 'HIDDEN_PINNED_FACT', { pinned: true, visibility: 'hidden' }),
+      record(probe, 'hr', 'HIDDEN_REGULAR_FACT', { visibility: 'hidden' }),
+      record(probe, 'vp', 'VISIBLE_PINNED_FACT', { pinned: true }),
+      record(probe, 'vr', 'VISIBLE_REGULAR_FACT'),
+    ];
+    const { text, ledger } = probe.digest(rows, { ...s.settings, injectMode: 'details' }, {});
+    assert.ok(text.includes('VISIBLE_PINNED_FACT') && text.includes('VISIBLE_REGULAR_FACT'));
+    assert.ok(!text.includes('HIDDEN_PINNED_FACT') && !text.includes('HIDDEN_REGULAR_FACT'));
+    assert.equal(ledger.pinnedCount, 1); assert.equal(ledger.regularCount, 1);
+  });
+  await test('V02 pre-step never injects hidden records, including hidden pinned ones', async () => {
+    const { probe, apply } = await isolated();
+    const s = probe.getState();
+    s.memories = [
+      record(probe, 'hp', 'HIDDEN_PINNED_FACT', { pinned: true, visibility: 'hidden' }),
+      record(probe, 'hr', 'HIDDEN_REGULAR_FACT', { visibility: 'hidden' }),
+      record(probe, 'vr', 'VISIBLE_REGULAR_FACT'),
+    ];
+    s.settings.injectMode = 'details'; s.settings.maxInject = 6;
+    const ctx = host(); apply(ctx);
+    const decision = await ctx.events.get('agent/pre-step')({}, async () => ({ kind: 'accept', messages: [] }));
+    const text = decision.messages.at(-1).content[0].text;
+    assert.ok(text.includes('VISIBLE_REGULAR_FACT'));
+    assert.ok(!text.includes('HIDDEN_PINNED_FACT') && !text.includes('HIDDEN_REGULAR_FACT'));
+    assert.equal(decision.messages.at(-1)._memoryLedger.pinnedCount, 0);
+  });
+  await test('V03 memory_search and memory_list never return hidden records', async () => {
+    const { probe } = await isolated(); const s = probe.getState();
+    s.memories = [record(probe, 'v', 'shared fact'), record(probe, 'h', 'shared fact', { visibility: 'hidden' })];
+    const ctx = host(); probe.registerTools(ctx);
+    for (const name of ['memory_search', 'memory_list']) {
+      const tool = ctx.registeredTools.get(name);
+      const result = await tool.execute(name === 'memory_search' ? { query: 'shared' } : {});
+      assert.equal(result.memories.length, 1);
+      assert.equal(result.memories[0].id, 'v');
+    }
+  });
+  await test('V04 hiding marks the profile stale and drops the summary from injection', async () => {
+    const { probe } = await isolated(); const s = probe.getState();
+    s.memories = [record(probe, 'secret', 'SECRET_FACT')];
+    s.profile = { content: 'SUMMARY_CONTAINS_SECRET_FACT', generatedAt: 1, stale: false };
+    assert.ok(probe.digest(s.memories, s.settings, s.profile).text.includes('SUMMARY_CONTAINS_SECRET_FACT'));
+    const hidden = await rpc(probe, 'update', { id: 'secret', patch: { visibility: 'hidden' } });
+    assert.equal(hidden.ok, true); assert.equal(s.profile.stale, true);
+    const afterHide = probe.digest(s.memories, s.settings, s.profile).text;
+    assert.ok(!afterHide.includes('SECRET_FACT'));
+    assert.ok(!afterHide.includes('SUMMARY_CONTAINS_SECRET_FACT'));
+    s.profile.stale = false;
+    const shown = await rpc(probe, 'update', { id: 'secret', patch: { visibility: 'visible' } });
+    assert.equal(shown.ok, true); assert.equal(s.profile.stale, true);
+    assert.ok(probe.digest(s.memories, s.settings, s.profile).text.includes('SECRET_FACT'));
+  });
+  await test('V05 extraction context omits hidden facts', async () => {
+    const { probe } = await isolated(); const s = probe.getState();
+    s.memories = [record(probe, 'h', 'HIDDEN_EXTRACT_FACT', { visibility: 'hidden' }), record(probe, 'v', 'VISIBLE_EXTRACT_FACT')];
+    let prompt = '';
+    const ctx = { llm: { stream: async function* (input) {
+      prompt = input.messages[0].content[0].text;
+      yield { kind: 'text-delta', text: '{"candidates":[]}' };
+    } } };
+    const result = await probe.extractMemories(ctx, '用户：测试', { extractProvider: 'test', extractModel: 'test' });
+    assert.equal(result.ok, true);
+    assert.ok(prompt.includes('VISIBLE_EXTRACT_FACT'));
+    assert.ok(!prompt.includes('HIDDEN_EXTRACT_FACT'));
+  });
+  await test('V06 visibility validation, default, patch semantics and import/export persistence', async () => {
+    const { probe } = await isolated();
+    assert.ok(probe.validateRecord({ text: 'x', visibility: 'bad' }).length > 0);
+    assert.deepEqual(probe.validateRecord({ text: 'x', visibility: 'hidden' }), []);
+    assert.equal(probe.normalizeRecord({ text: 'x' }).visibility, 'visible');
+    const hidden = probe.normalizeRecord({ text: 'x', visibility: 'hidden' });
+    assert.equal(probe.normalizeRecord({ text: 'y' }, hidden).visibility, 'hidden');
+    assert.equal(probe.normalizeRecord({ visibility: 'visible' }, hidden).visibility, 'visible');
+    const imported = await rpc(probe, 'import', { data: [{ id: 'old', text: 'old' }, { id: 'hid', text: 'hid', visibility: 'hidden' }] });
+    assert.equal(imported.ok, true);
+    const s = probe.getState();
+    assert.equal(s.memories.find((r) => r.id === 'old').visibility, 'visible');
+    assert.equal(s.memories.find((r) => r.id === 'hid').visibility, 'hidden');
+    const exported = await rpc(probe, 'export');
+    assert.equal(exported.data.memories.find((r) => r.id === 'hid').visibility, 'hidden');
+  });
+  await test('V06b merge preview treats a missing visibility as visible (no false updates)', async () => {
+    const { probe } = await isolated();
+    const legacy = record(probe, 'legacy', 'legacy');
+    delete legacy.visibility;
+    probe.getState().memories = [legacy];
+    const preview = await rpc(probe, 'preview-import', { data: [{ ...legacy }] });
+    assert.deepEqual(preview.preview, { newCount: 0, updateCount: 0, keptCount: 1, invalidCount: 0, settingsChanged: false });
+    const hiddenPreview = await rpc(probe, 'preview-import', { data: [{ ...legacy, visibility: 'hidden' }] });
+    assert.equal(hiddenPreview.preview.updateCount, 1);
   });
   await test('client requires successful preview and confirmation before import; success color updated', async () => {
     const flow = client.slice(client.indexOf('const doImport ='), client.indexOf('return h("div", null, [', client.indexOf('const doImport =')));

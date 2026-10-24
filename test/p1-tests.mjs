@@ -83,6 +83,19 @@ try {
   assert.equal(result.messages.at(-1)._memoryLedger.pinnedCount, 1);
   assert.ok(!result.messages.at(-1).content[0].text.includes('普通事实'));
  });
+ await test('V07 hidden records are excluded from digest and pre-step, even when pinned', async () => {
+  const rows = [normalizeRecord({ text: '隐藏常驻', pinned: true, visibility: 'hidden' }), normalizeRecord({ text: '隐藏普通', visibility: 'hidden' }), normalizeRecord({ text: '可见普通' })];
+  const result = digest(rows, { ...DEFAULT_SETTINGS, injectMode: 'details' }, {});
+  assert.ok(result.text.includes('可见普通'));
+  assert.ok(!result.text.includes('隐藏常驻') && !result.text.includes('隐藏普通'));
+  assert.equal(result.ledger.pinnedCount, 0); assert.equal(result.ledger.regularCount, 1);
+  state.memories = rows;
+  state.settings.inject = true; state.settings.injectMode = 'details'; state.settings.maxInject = 6;
+  const injected = await events.get('agent/pre-step')({}, async () => ({ kind: 'accept', messages: [] }));
+  const text = injected.messages.at(-1).content[0].text;
+  assert.ok(text.includes('可见普通'));
+  assert.ok(!text.includes('隐藏常驻') && !text.includes('隐藏普通'));
+ });
  await test('R14 sequential same-content writes are idempotent with backup', async () => {
   const first = await mod.writeAgentsMd('测试规则'); assert.equal(first.ok, true);
   const before = await readdir(join(root, 'user', '.dsh'));

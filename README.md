@@ -10,6 +10,7 @@
 - **说明页**：解释技术名词与使用方式（策略、类型、范围、注入、工具、导入导出等）
 - **个性化设置**：入口位置、自动注入开关、注入条数/字符上限、常驻预算、自动沉淀开关和轮数间隔
 - **常驻记忆**：标记 pinned 的记录优先注入 `<memory-rules>`，不占普通记忆条数，有独立字符预算
+- **对 Agent 隐藏**：标记 hidden 的记录仍保留在库中（管理界面可见、可编辑、可恢复），但不进入任何模型读取出口：自动注入（含常驻）、`memory_search`、`memory_list`、画像摘要与自动沉淀的提取上下文
 - **规则文件**：读写固定的 `~/.dsh/AGENTS.md`，保存前确认并备份，每次会话由 DSH 自动注入
 - **自动沉淀**：每隔指定轮数调用 LLM 提取最多 3 条事实，进入待确认队列，确认后写入
 - **模型工具**：`memory_write` / `memory_search` / `memory_list` / `memory_forget` / `memory_update_profile` / `memory_read_agents_md` / `memory_write_agents_md`
@@ -52,7 +53,7 @@ dsh-memory-manager/
       "backstory": "", "person": "", "relationship": "",
       "tags": ["旅行", "饮食"], "importance": 4,
       "createdAt": 0, "updatedAt": 0, "useCount": 0, "lastUsedAt": 0,
-      "source": "user", "pinned": false
+      "source": "user", "pinned": false, "visibility": "visible"
     }
   ]
 }
@@ -286,3 +287,23 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 验证：Codex 隔离测试 **17/17 PASS**；独立复核 7 项关键行为全部通过（含 U+FFFD 拒绝、scope 覆盖、preview-import 计数、export 含 profile、R02 stale 检测）。
 
 **回退**：`lib/rollback/client.stage8-before-p0fix.js` + `host.stage5-before-p0fix.js`。
+
+## 记录可见性 visible / hidden（2026-10-24）
+
+每条记忆新增 `visibility` 字段（`visible` 默认 / `hidden`）。隐藏语义是**只对模型隐藏**，不是删除：
+
+- 记录仍保存在 `memory.json`，管理界面正常显示，可编辑、可恢复；
+- 不进入任何模型读取出口：
+  1. `agent/pre-step` 自动注入 —— 过滤发生在 pinned 之前，**hidden 的常驻记忆也不注入**；
+  2. `pickForInjection()` 普通记忆 Top N 选择；
+  3. `memory_search` 工具；
+  4. `memory_list` 工具；
+  5. 用户画像 —— 摘要模式整段注入 `profile.content`，因此隐藏/恢复记录时调用 `markStale()`，摘要过期后回退明细；
+  6. 自动沉淀的提取上下文（提示词里的「已有记忆」）；
+- 工具侧不提供「读取 hidden」的参数；`memory_write` 也不暴露 `visibility`；
+- 导入旧数据没有该字段时按 `visible` 处理；导出保留该字段；存储版本号不变（超集字段，`normalizeRecord` 兜底）；
+- 客户端：卡片上有「对 Agent 隐藏 / 恢复可见」开关与「已隐藏」徽标；筛选栏新增「已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。
+
+验证：`node --check` × 3；`p0-tests` **24/24**、`p1-tests` **10/10**、`p1-client-tests` **8/8**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「已隐藏」筛选与卡片可见性开关存在。
+
+**回退**：`lib/rollback/client.stage12-before-visibility.js` + `host.stage6-before-visibility.js`。
