@@ -304,12 +304,12 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 - 工具侧不提供「读取 hidden」的参数；`memory_write` 也不暴露 `visibility`；
 - 管理 RPC `search` 默认不含 hidden，只有显式 `includeHidden: true` 才返回；`memory_forget` 工具拒绝删除 hidden（管理界面仍可删除）；
 - 质量审阅「合并标签」不会把 hidden 行的 tags 并入 visible 记录；
-- 记忆列表页有一条非阻塞提示：隐藏立即生效，画像摘要会标记为待更新，Agent 更新画像时会按最新记忆重新生成；
+- 记忆列表页有一条非阻塞提示：隐藏会立即生效，Agent 不再读取；记录仍保留，画像摘要会标记为待更新；
 - 画像写入带 revision 乐观锁：`memory_list` / `memory_search` 返回 `revision`，`memory_update_profile` 在画像 stale 时必须携带该 revision，版本不匹配返回 `profile-outdated` 并拒绝写入，避免隐藏/删除前生成的旧摘要覆盖失效标记；加载旧库时若 hidden 记录的 `updatedAt` 不早于 `profile.generatedAt`，画像自动标记 stale；
 - 导入旧数据没有该字段时按 `visible` 处理；导出保留该字段；存储版本号不变（超集字段，`normalizeRecord` 兜底）；
-- 客户端：卡片上有「对 Agent 隐藏 / 恢复对 Agent 可见」开关与「已隐藏」徽标；筛选栏新增「已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。
+- 客户端：卡片上有「对 Agent 隐藏 / 恢复对 Agent 可见」开关与「已隐藏」徽标；筛选栏有「仅看已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。
 
-验证：`node --check` × 3；`p0-tests` **27/27**、`p1-tests` **10/10**、`p1-client-tests` **11/11**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「已隐藏」筛选与卡片可见性开关存在。
+验证：`node --check` × 3；`p0-tests` **27/27**、`p1-tests` **10/10**、`p1-client-tests` **12/12**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「仅看已隐藏」筛选、卡片可见性开关、窄屏 44px 操作命中区与导入预览按钮。
 
 ## 设计评审 P1 修整（2026-10-24）
 
@@ -325,5 +325,24 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 验证：`p1-client-tests` **11/11**；`check-demo` 新增 `filterPosition=static` 断言；窄屏实测展开前首卡 y≈402、展开后 y≈548，滚动 420px 后筛选栏 y=-158（不再吸顶）。
 
 **回退**：`lib/rollback/client.stage16-before-design-p1.js`。
+
+## 设计评审 P2 修整（2026-10-24）
+
+按同一份 Codex 评审处理 8 项 P2：
+
+| 项 | 修整 |
+|---|---|
+| **P2-01 可见性筛选** | 「已隐藏」改为「仅看已隐藏」，title 说明默认显示全部（含已隐藏）；说明页补充同一说明 |
+| **P2-02 隐藏空状态** | 仅隐藏筛选且库内 0 条时显示「还没有已隐藏的记忆…」，并提供「查看全部记忆」 |
+| **P2-03 设置保存** | 顶部提示「修改后点底部『保存设置』生效」；有未保存修改时就近显示状态；入口说明改为「保存后…」 |
+| **P2-04 导入** | 标题「导入（先预览）」、按钮「预览导入」；消息区分 info / ok / err |
+| **P2-05 表单层次** | 内容（必填）置顶 → 类型 / 范围 / 重要性 / 标签 → 常驻 / 隐藏 → 「高级选项」折叠（格式与结构字段）；提交统一「新增记忆 / 保存修改」 |
+| **P2-06 文案** | 列表合并为一条结论；说明页去掉首句术语；隐藏卡片补「默认显示全部」 |
+| **P2-07 触屏命中区** | 窄屏记录操作按钮最小高度 44px（桌面 30px） |
+| **P2-08 结构化路径** | 路径独立成行（`display:block`），值仍在首要阅读位置；不改宿主 secondary token |
+
+验证：`p1-client-tests` **12/12**；`check-demo` 新增 `previewImport`、`importHeading`、`actionHeight=44` 断言；DOM 探针确认表单首字段为「内容（必填）」、高级选项默认折叠、设置未保存提示生效；无 console 错误。
+
+**回退**：`lib/rollback/client.stage17-before-design-p2.js`。
 
 **回退**：`lib/rollback/client.stage12-before-visibility.js` + `host.stage6-before-visibility.js`。

@@ -36,11 +36,11 @@ await test('R06 empty guard, comma tags, matching rule preview, saving and failu
  const dirty = [], saved = []; let reject;
  const props = { strategy: 'enhanced', rules: [{ field: 'tag', value: '代码', strategy: 'json' }], onDirty: x => dirty.push(x), onSubmit: form => { saved.push(form); return new Promise((resolve, no) => reject = no); } };
  let tree = render(exported.probe.MemoryForm, props);
- assert.equal(button(tree, '添加记忆').props.disabled, true);
+ assert.equal(button(tree, '新增记忆').props.disabled, true);
  find(tree, n => n.type === 'textarea').props.onChange({ target: { value: '我的事实' } }); tree = render(exported.probe.MemoryForm, props);
  find(tree, n => n.type === 'input' && n.props.placeholder === '旅行, 饮食').props.onChange({ target: { value: '代码， 学习, ' } }); tree = render(exported.probe.MemoryForm, props);
  assert.ok(text(tree).includes('生效格式：JSON Cards')); assert.equal(dirty.at(-1), true);
- const pending = button(tree, '添加记忆').props.onClick(); tree = render(exported.probe.MemoryForm, props);
+ const pending = button(tree, '新增记忆').props.onClick(); tree = render(exported.probe.MemoryForm, props);
  assert.equal(button(tree, '保存中…').props.disabled, true);
  reject(new Error('模拟失败')); await pending; tree = render(exported.probe.MemoryForm, props);
  assert.deepEqual(Array.from(saved[0].tags), ['代码', '学习']); assert.ok(text(tree).includes('模拟失败')); assert.equal(find(tree, n => n.type === 'textarea').props.value, '我的事实');
@@ -90,8 +90,8 @@ await test('V08 hidden filter chip filters the management list and visibility to
  await visRow.props.onToggleVisibility(visRow.props.rec);
  assert.deepEqual(writes.at(-1), { action: 'update', payload: { id: 'vis', patch: { visibility: 'hidden' } } });
  tree = render(exported.MemoryPage);
- button(tree, '已隐藏').props.onClick(); tree = render(exported.MemoryPage);
- assert.equal(button(tree, '已隐藏').props['aria-pressed'], true);
+ button(tree, '仅看已隐藏').props.onClick(); tree = render(exported.MemoryPage);
+ assert.equal(button(tree, '仅看已隐藏').props['aria-pressed'], true);
  assert.ok(text(tree).includes('显示 1 / 2 条'));
 });
 await test('V09 hidden card shows the badge and a pressed restore toggle', async () => {
@@ -106,6 +106,9 @@ await test('V09 hidden card shows the badge and a pressed restore toggle', async
  const pinnedRow = render(exported.probe.MemoryRow, { ...props, rec: { id: 'pin', text: '常驻事实', kind: 'semantic', pinned: true, visibility: 'visible', tags: [], updatedAt: 1 } });
  assert.ok(text(pinnedRow).includes('📌 常驻'));
  assert.equal(button(pinnedRow, '取消常驻').props['aria-pressed'], true);
+ const jsonRow = render(exported.probe.MemoryRow, { ...props, strategy: 'json', rec: { id: 'j', text: '', value: '高级工程师', category: 'work', key: 'title', kind: 'semantic', visibility: 'visible', tags: [], updatedAt: 1 } });
+ const pathPart = find(jsonRow, n => n.type === 'span' && text(n).includes('work.title'));
+ assert.equal(pathPart.props.style.display, 'block');
 });
 await test('V10 memory form exposes the hide checkbox', async () => {
  const form = render(exported.probe.MemoryForm, { strategy: 'enhanced', rules: [], onDirty() {}, onSubmit() {} });
@@ -141,6 +144,14 @@ await test('V15 stale profile warning uses the high-contrast text color', async 
  const warn = find(tree, n => n.type === 'p' && text(n) === '数据已变更，摘要待更新');
  assert.ok(String(warn.props.style.color).includes('color-mix'));
  assert.ok(String(warn.props.style.color).includes('55%'));
+});
+await test('V16 hidden filter empty state explains and offers a way back', async () => {
+ mockedState.memories = [{ id: 'vis', text: '可见事实', kind: 'semantic', updatedAt: 1, visibility: 'visible' }];
+ let tree = render(exported.MemoryPage); await tick(); tree = render(exported.MemoryPage);
+ button(tree, '仅看已隐藏').props.onClick(); tree = render(exported.MemoryPage);
+ assert.ok(text(tree).includes('还没有已隐藏的记忆'));
+ button(tree, '查看全部记忆').props.onClick(); tree = render(exported.MemoryPage);
+ assert.equal(button(tree, '仅看已隐藏').props['aria-pressed'], false);
 });
 await test('R14 preview first, changed draft invalidates preview, exact content written', async () => {
  const props = { onDirty() {} }; let tree = render(exported.probe.AgentsPanel, props); await tick(); tree = render(exported.probe.AgentsPanel, props);
