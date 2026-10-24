@@ -20,6 +20,7 @@
 | stage 11 | `client.stage10-before-p1.js` | 2026-10-24 02:49 | P1 体验提升之前 |
 | stage 12 | `client.stage12-before-visibility.js` | 2026-10-24 21:33 | 记录 `visibility` 字段（visible / hidden）之前 |
 | stage 13 | `client.stage13-before-profile-revision.js` | 2026-10-24 21:51 | 画像写入 revision 乐观锁之前 |
+| stage 14 | `client.stage14-before-hidden-boundaries.js` | 2026-10-24 22:03 | hidden 边界收紧（质量合并标签 / RPC 搜索 / 工具删除）之前 |
 
 ## 宿主端快照（lib/index.js）
 
@@ -34,6 +35,7 @@
 | host stage 5.1 | `host.stage5-before-p1.js` | 2026-10-24 02:49 | P1 体验提升之前 |
 | host stage 6 | `host.stage6-before-visibility.js` | 2026-10-24 21:33 | 记录 `visibility` 字段（visible / hidden）之前 |
 | host stage 7 | `host.stage7-before-profile-revision.js` | 2026-10-24 21:51 | 画像写入 revision 乐观锁之前 |
+| host stage 8 | `host.stage8-before-hidden-boundaries.js` | 2026-10-24 22:03 | hidden 边界收紧（质量合并标签 / RPC 搜索 / 工具删除）之前 |
 
 ## 回退命令
 
@@ -55,5 +57,6 @@ node --check lib\index.js
 
 - **`client.js` 第 2 行的 bundle id 必须与 `package.json` 的 `name` 一致**（当前为 `dsh-memory-manager`）。回退到 2026-10-24 改名之前的快照后，需把该行改成 `id: "dsh-memory-manager"`，否则客户端会报 `duplicate factory registration` 且入口不激活。
 - 快照只包含代码；存储数据（`%APPDATA%\dsh-memory\memory.json`）不会被任何回退操作修改。
+- **回退到 `client.stage12` / `host.stage6` 之前的快照会丢失 `visibility` 语义**：旧代码不认识 hidden 字段，会把隐藏记录当作可见记录注入和检索。若库中已有 hidden 记录，回退前请先备份，回退后不要把该库继续用于隐私场景。
 - 新增阶段时按 `client.stageN-before-<改动名>.js` / `host.stageN-before-<改动名>.js` 命名，并在上表补一行。
 - 混合策略实验（stage 5 / host stage 0）曾实现后回退；stage 6 / host stage 1 是第二次实现前的快照。

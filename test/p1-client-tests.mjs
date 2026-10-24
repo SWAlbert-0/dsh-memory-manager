@@ -104,6 +104,17 @@ await test('V10 memory form exposes the hide checkbox', async () => {
  const form = render(exported.probe.MemoryForm, { strategy: 'enhanced', rules: [], onDirty() {}, onSubmit() {} });
  assert.ok(text(form).includes('对 Agent 隐藏（保留在库中'));
 });
+await test('V13 quality merge does not copy hidden tags into a visible record', async () => {
+ const props = { memories: [
+  { id: 'vis', text: '重复', tags: ['可见'], updatedAt: 2, visibility: 'visible' },
+  { id: 'hid', text: '重复', tags: ['隐藏标签'], updatedAt: 1, visibility: 'hidden' },
+ ], refresh: async () => {} };
+ let tree = render(exported.probe.QualityPanel, props);
+ await button(tree, '合并标签').props.onClick();
+ assert.equal(writes[0].action, 'update'); assert.equal(writes[0].payload.id, 'vis');
+ assert.deepEqual(writes[0].payload.patch.tags, ['可见']);
+ assert.equal(writes[1].action, 'delete'); assert.equal(writes[1].payload.id, 'hid');
+});
 await test('R14 preview first, changed draft invalidates preview, exact content written', async () => {
  const props = { onDirty() {} }; let tree = render(exported.probe.AgentsPanel, props); await tick(); tree = render(exported.probe.AgentsPanel, props);
  find(tree, n => n.type === 'textarea').props.onChange({ target: { value: '新规则' } }); tree = render(exported.probe.AgentsPanel, props);

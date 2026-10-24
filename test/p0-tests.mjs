@@ -401,6 +401,21 @@ try {
     const res = await ctx.routes.get('/api/memory/profile').fetch(new Request('http://isolated/api/memory/profile', { method: 'POST', body: JSON.stringify({ content: 'HTTP_LEAK', basedOnRevision: base }) }));
     assert.equal(res.status, 409);
   });
+  await test('V12 management search hides hidden by default and forget refuses hidden', async () => {
+    const { probe } = await isolated(); const s = probe.getState();
+    s.memories = [record(probe, 'v', 'shared fact'), record(probe, 'h', 'shared fact', { visibility: 'hidden' })];
+    const visibleSearch = await rpc(probe, 'search', { query: 'shared' });
+    assert.equal(visibleSearch.memories.length, 1); assert.equal(visibleSearch.memories[0].id, 'v');
+    const allSearch = await rpc(probe, 'search', { query: 'shared', includeHidden: true });
+    assert.equal(allSearch.memories.length, 2);
+    const ctx = host(); probe.registerTools(ctx);
+    const forget = ctx.registeredTools.get('memory_forget');
+    const refused = await forget.execute({ id: 'h' });
+    assert.equal(refused.ok, false); assert.equal(refused.error, 'hidden-record');
+    assert.equal(s.memories.length, 2);
+    const removed = await forget.execute({ id: 'v' });
+    assert.equal(removed.ok, true); assert.equal(s.memories.length, 1);
+  });
   await test('client requires successful preview and confirmation before import; success color updated', async () => {
     const flow = client.slice(client.indexOf('const doImport ='), client.indexOf('return h("div", null, [', client.indexOf('const doImport =')));
     assert.ok(flow.indexOf('rpc("preview-import"') < flow.indexOf('if (!confirm('));

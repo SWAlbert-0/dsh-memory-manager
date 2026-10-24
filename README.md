@@ -134,6 +134,7 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 - 检索是 BM25 风格的词法匹配，没有向量语义检索。
 - 没有加密；记忆文件是明文 JSON，请勿存放密码/token（提示词里也明确禁止）。
 - 导入/导出为整库级别，暂不支持单条文件导入。
+- `hidden` 只约束“从记忆库读取”的出口；自动沉淀的输入是对话原文，若用户在对话中再次说出被隐藏事实的改写版，仍可能作为新候选入库（精确同文会被去重，改写不会）。需要绝对不再出现的事实，请同时删除该记录。
 - 设置页在「记忆」面板内，尚未注册到 DSH 全局 Settings 页面。
 
 ## UI 改版（Codex + 前端设计技能）
@@ -301,10 +302,12 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
   5. 用户画像 —— 摘要模式整段注入 `profile.content`，因此隐藏/恢复记录时调用 `markStale()`，摘要过期后回退明细；
   6. 自动沉淀的提取上下文（提示词里的「已有记忆」）；
 - 工具侧不提供「读取 hidden」的参数；`memory_write` 也不暴露 `visibility`；
+- 管理 RPC `search` 默认不含 hidden，只有显式 `includeHidden: true` 才返回；`memory_forget` 工具拒绝删除 hidden（管理界面仍可删除）；
+- 质量审阅「合并标签」不会把 hidden 行的 tags 并入 visible 记录；
 - 画像写入带 revision 乐观锁：`memory_list` / `memory_search` 返回 `revision`，`memory_update_profile` 在画像 stale 时必须携带该 revision，版本不匹配返回 `profile-outdated` 并拒绝写入，避免隐藏/删除前生成的旧摘要覆盖失效标记；加载旧库时若 hidden 记录的 `updatedAt` 不早于 `profile.generatedAt`，画像自动标记 stale；
 - 导入旧数据没有该字段时按 `visible` 处理；导出保留该字段；存储版本号不变（超集字段，`normalizeRecord` 兜底）；
 - 客户端：卡片上有「对 Agent 隐藏 / 恢复可见」开关与「已隐藏」徽标；筛选栏新增「已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。
 
-验证：`node --check` × 3；`p0-tests` **26/26**、`p1-tests` **10/10**、`p1-client-tests` **8/8**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「已隐藏」筛选与卡片可见性开关存在。
+验证：`node --check` × 3；`p0-tests` **27/27**、`p1-tests` **10/10**、`p1-client-tests` **9/9**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「已隐藏」筛选与卡片可见性开关存在。
 
 **回退**：`lib/rollback/client.stage12-before-visibility.js` + `host.stage6-before-visibility.js`。
