@@ -43,7 +43,7 @@ await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, devi
 await sleep(300);
 await ev(`document.querySelector('[aria-controls="dshmem-filter-panel"]').click()`);
 await sleep(200);
-const narrow = await ev(`(() => { const root = document.querySelector('.dshmem-root'); const bar = root.querySelector('.dshmem-filter-bar'); const tag = root.querySelector('.dshmem-filter-select'); return { filterHeight: bar.getBoundingClientRect().height, overflow: root.scrollWidth > root.clientWidth, tagWidth: tag.getBoundingClientRect().width, panelWidth: root.querySelector('#dshmem-filter-panel').getBoundingClientRect().width, clamp: getComputedStyle(root.querySelector('.dshmem-text')).webkitLineClamp }; })()`);
+const narrow = await ev(`(() => { const root = document.querySelector('.dshmem-root'); const bar = root.querySelector('.dshmem-filter-bar'); const tag = root.querySelector('.dshmem-filter-select'); return { filterHeight: bar.getBoundingClientRect().height, filterPosition: getComputedStyle(bar).position, overflow: root.scrollWidth > root.clientWidth, tagWidth: tag.getBoundingClientRect().width, panelWidth: root.querySelector('#dshmem-filter-panel').getBoundingClientRect().width, clamp: getComputedStyle(root.querySelector('.dshmem-text')).webkitLineClamp }; })()`);
 const full = await ev(`({ tabs: document.querySelectorAll('.dshmem-root [role=tab]').length, search: !!document.querySelector('.dshmem-root input[type=search]'), edit: !!document.querySelector('.dshmem-root [aria-label="编辑记忆"]'), remove: !!document.querySelector('.dshmem-root [aria-label="删除记忆"]'), add: [...document.querySelectorAll('.dshmem-root button')].some(b => b.innerText === '+ 新增记忆'), simpleToggle: [...document.querySelectorAll('.dshmem-root button')].some(b => b.innerText === '切换到简化视图'), hiddenFilter: [...document.querySelectorAll('.dshmem-root button')].some(b => b.innerText === '已隐藏'), visibilityToggle: [...document.querySelectorAll('.dshmem-root button')].some(b => b.getAttribute('aria-label') === '对 Agent 隐藏' || b.getAttribute('aria-label') === '恢复为对 Agent 可见'), hideHint: [...document.querySelectorAll('.dshmem-root p')].some(p => p.innerText.includes('隐藏会立即生效')) })`);
 const report = { entry, ...info, checks, narrow, full, jsErrors, memoryWrites };
 console.log(JSON.stringify(report, null, 2));
@@ -54,6 +54,7 @@ assert.deepEqual(memoryWrites, []);
 assert.deepEqual(info.tabs, ['记忆', '画像', '规则文件', '设置', '说明']);
 assert.ok(checks.every(c => c.clicked && c.selected === c.name && c.rendered));
 assert.ok(narrow.filterHeight <= 300, 'narrow filter height');
+assert.equal(narrow.filterPosition, 'static', 'expanded narrow filter is not sticky');
 assert.equal(narrow.overflow, false);
 assert.equal(narrow.tagWidth, narrow.panelWidth);
 assert.equal(narrow.clamp, '5');

@@ -15,7 +15,7 @@
 - **共享模块**：`lib/shared.js`（宿主端函数拆分）
 - **测试实例**：端口 56001，隔离 `DSH_HOME=D:\Dev\Projects\Personal\dsh-plugin\.dsh-test-home`
 - **存储**：`%APPDATA%\dsh-memory\memory.json`（44 条真实记忆，未动）
-- **回退点**：`lib/rollback/`（stage 0–14 + host stage 0–8，命名规则见该目录 README.md）
+- **回退点**：`lib/rollback/`（stage 0–16 + host stage 0–8，命名规则见该目录 README.md）
 
 ## 已完成功能
 
@@ -34,6 +34,7 @@
 | P0 安全修复 | stale 摘要回退 / 导入预览 / 队列保全 / 统一校验 / 保存串行化 / scope 修复 / U+FFFD 拒绝 |
 | P1 体验提升 | 导航收敛 7→5 / 表单校验 / 窄屏折叠 / 注入追踪 / 质量审阅 / 检索修复 / 提取窗口 / 审批 / 模块化 / 同步 |
 | 说明页 | 技术名词 / 策略对比 / 快速上手 / 注意事项 |
+| 设计评审 P1 修整 | 对比度 / 卡片状态与操作分离 / 画像 Markdown 排版 / 窄屏筛选不吸顶 |
 
 ## 架构要点
 
@@ -92,7 +93,7 @@
 | `lib/rollback/` | 回退点（stage 0–11 + host stage 0–5.1） |
 | `lib/rollback/README.md` | 回退点清单 + 恢复命令 |
 | `test/p0-tests.mjs` | P0 隔离测试（27/27） |
-| `test/p1-tests.mjs` / `test/p1-client-tests.mjs` | P1 宿主 / 客户端测试（10/10、9/9） |
+| `test/p1-tests.mjs` / `test/p1-client-tests.mjs` | P1 宿主 / 客户端测试（10/10、11/11） |
 | `check-demo.mjs` | 浏览器端到端验证（CDP，5 标签 + 窄屏 + 简化视图已移除断言） |
 | `verify-*.mjs` | 定向验证脚本（CDP） |
 | `THEME-TOKENS.md` | DSH 设计 token 参考 |

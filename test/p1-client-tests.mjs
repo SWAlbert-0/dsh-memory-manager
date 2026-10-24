@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 let code = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8');
-code = code.replace('exports.MemoryPage = MemoryPage;', 'exports.probe = { MemoryForm, QualityPanel, AgentsPanel, MemoryRow }; exports.MemoryPage = MemoryPage;');
+code = code.replace('exports.MemoryPage = MemoryPage;', 'exports.probe = { MemoryForm, QualityPanel, AgentsPanel, MemoryRow, ProfilePanel }; exports.MemoryPage = MemoryPage;');
 let cells = [], cursor = 0, queued = [], exported, intervals = new Map(), timerId = 0;
 let approvals = [], approve = true, writes = [], ruleFile = '旧规则', mockedState;
 const initial = () => ({ ok: true, settings: { strategy: 'enhanced', inject: true, injectMode: 'summary', strategyRules: [] }, profile: { content: '旧画像', generatedAt: 1 }, memories: [{ id: 'old', text: '旧事实', kind: 'semantic', updatedAt: 1 }], pending: [] });
@@ -82,6 +82,8 @@ await test('V08 hidden filter chip filters the management list and visibility to
  ];
  let tree = render(exported.MemoryPage); await tick(); tree = render(exported.MemoryPage);
  assert.ok(text(tree).includes('隐藏会立即生效'));
+ const kindLabel = find(tree, n => n.type === 'span' && text(n) === '类型');
+ assert.ok(String(kindLabel.props.style.color).includes('label-secondary'));
  const rows = nodes(tree).filter(n => n.type === exported.probe.MemoryRow);
  assert.equal(rows.length, 2);
  const visRow = rows.find(n => n.props.rec.id === 'vis');
@@ -96,10 +98,14 @@ await test('V09 hidden card shows the badge and a pressed restore toggle', async
  const props = { strategy: 'enhanced', rules: [], onPin() {}, onToggleVisibility() {}, onEdit() {}, onDelete() {} };
  const hiddenRow = render(exported.probe.MemoryRow, { ...props, rec: { id: 'hid', text: '隐藏事实', kind: 'semantic', visibility: 'hidden', tags: [], updatedAt: 1 } });
  assert.ok(text(hiddenRow).includes('已隐藏'));
- assert.equal(button(hiddenRow, '恢复可见').props['aria-pressed'], true);
+ assert.equal(button(hiddenRow, '恢复对 Agent 可见').props['aria-pressed'], true);
  const visibleRow = render(exported.probe.MemoryRow, { ...props, rec: { id: 'vis', text: '可见事实', kind: 'semantic', visibility: 'visible', tags: [], updatedAt: 1 } });
  assert.ok(!text(visibleRow).includes('已隐藏'));
  assert.equal(button(visibleRow, '对 Agent 隐藏').props['aria-pressed'], false);
+ assert.equal(button(visibleRow, '设为常驻').props['aria-pressed'], false);
+ const pinnedRow = render(exported.probe.MemoryRow, { ...props, rec: { id: 'pin', text: '常驻事实', kind: 'semantic', pinned: true, visibility: 'visible', tags: [], updatedAt: 1 } });
+ assert.ok(text(pinnedRow).includes('📌 常驻'));
+ assert.equal(button(pinnedRow, '取消常驻').props['aria-pressed'], true);
 });
 await test('V10 memory form exposes the hide checkbox', async () => {
  const form = render(exported.probe.MemoryForm, { strategy: 'enhanced', rules: [], onDirty() {}, onSubmit() {} });
@@ -115,6 +121,26 @@ await test('V13 quality merge does not copy hidden tags into a visible record', 
  assert.equal(writes[0].action, 'update'); assert.equal(writes[0].payload.id, 'vis');
  assert.deepEqual(writes[0].payload.patch.tags, ['可见']);
  assert.equal(writes[1].action, 'delete'); assert.equal(writes[1].payload.id, 'hid');
+});
+await test('V14 profile Markdown renders headings, grouped lists and inline code at a consistent scale', async () => {
+ const profile = { content: '# 总览\n\n## 偏好\n- 喜欢 `手冲` 咖啡\n- 养猫\n\n普通段落', generatedAt: 1, stale: false };
+ const tree = render(exported.probe.ProfilePanel, { profile, memories: [] });
+ const h1 = find(tree, n => n.type === 'h3' && text(n) === '总览');
+ assert.equal(h1.props.style.fontSize, 18);
+ const h2 = find(tree, n => n.type === 'h4' && text(n) === '偏好');
+ assert.equal(h2.props.style.fontSize, 15);
+ const uls = nodes(tree).filter(n => n.type === 'ul');
+ assert.equal(uls.length, 1);
+ assert.equal(uls[0].children.length, 2);
+ assert.ok(nodes(tree).some(n => n.type === 'code' && text(n) === '手冲'));
+ const p = find(tree, n => n.type === 'p' && text(n) === '普通段落');
+ assert.equal(p.props.style.fontSize, 14);
+});
+await test('V15 stale profile warning uses the high-contrast text color', async () => {
+ const tree = render(exported.probe.ProfilePanel, { profile: { content: '## 偏好\n- 咖啡', generatedAt: 1, stale: true }, memories: [] });
+ const warn = find(tree, n => n.type === 'p' && text(n) === '数据已变更，摘要待更新');
+ assert.ok(String(warn.props.style.color).includes('color-mix'));
+ assert.ok(String(warn.props.style.color).includes('55%'));
 });
 await test('R14 preview first, changed draft invalidates preview, exact content written', async () => {
  const props = { onDirty() {} }; let tree = render(exported.probe.AgentsPanel, props); await tick(); tree = render(exported.probe.AgentsPanel, props);

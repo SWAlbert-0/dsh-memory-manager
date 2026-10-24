@@ -307,8 +307,23 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 - 记忆列表页有一条非阻塞提示：隐藏立即生效，画像摘要会标记为待更新，Agent 更新画像时会按最新记忆重新生成；
 - 画像写入带 revision 乐观锁：`memory_list` / `memory_search` 返回 `revision`，`memory_update_profile` 在画像 stale 时必须携带该 revision，版本不匹配返回 `profile-outdated` 并拒绝写入，避免隐藏/删除前生成的旧摘要覆盖失效标记；加载旧库时若 hidden 记录的 `updatedAt` 不早于 `profile.generatedAt`，画像自动标记 stale；
 - 导入旧数据没有该字段时按 `visible` 处理；导出保留该字段；存储版本号不变（超集字段，`normalizeRecord` 兜底）；
-- 客户端：卡片上有「对 Agent 隐藏 / 恢复可见」开关与「已隐藏」徽标；筛选栏新增「已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。
+- 客户端：卡片上有「对 Agent 隐藏 / 恢复对 Agent 可见」开关与「已隐藏」徽标；筛选栏新增「已隐藏」；新增/编辑表单有隐藏复选框；说明页补充文案。
 
-验证：`node --check` × 3；`p0-tests` **27/27**、`p1-tests` **10/10**、`p1-client-tests` **9/9**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「已隐藏」筛选与卡片可见性开关存在。
+验证：`node --check` × 3；`p0-tests` **27/27**、`p1-tests` **10/10**、`p1-client-tests` **11/11**；`verify-p0-fixes` 7 项；浏览器 `check-demo` 额外断言「已隐藏」筛选与卡片可见性开关存在。
+
+## 设计评审 P1 修整（2026-10-24）
+
+按 Codex `frontend-design` 评审（本地报告 `analysis/design-review/codex-report.md`）处理 4 项 P1：
+
+| 项 | 修整 |
+|---|---|
+| **P1-01 对比度** | 警告文字改用 `warnText`（warn 55% + label-primary 45%）：亮色约 5.6:1、暗色约 10:1；筛选标签、策略说明、辅助文字从 tertiary 改为 secondary |
+| **P1-02 状态 / 操作分离** | 卡片元信息只保留状态徽标（常驻 / 已隐藏）与类型、范围、标签、时间；常驻、隐藏、编辑、删除收进独立操作组，文案改为「设为常驻 / 取消常驻」「对 Agent 隐藏 / 恢复对 Agent 可见」 |
+| **P1-03 窄屏筛选** | 展开筛选时整条筛选栏不再吸顶（`position: static`）；窄屏搜索独占一行；窄屏隐藏次要注入提示 |
+| **P1-04 画像排版** | 支持 `# / ## / ###`、连续 `-` 列表合并、行内代码与粗体；正文统一 14px，标题 18 / 15 / 14px |
+
+验证：`p1-client-tests` **11/11**；`check-demo` 新增 `filterPosition=static` 断言；窄屏实测展开前首卡 y≈402、展开后 y≈548，滚动 420px 后筛选栏 y=-158（不再吸顶）。
+
+**回退**：`lib/rollback/client.stage16-before-design-p1.js`。
 
 **回退**：`lib/rollback/client.stage12-before-visibility.js` + `host.stage6-before-visibility.js`。
