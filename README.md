@@ -209,7 +209,7 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 
 - 居中 1040px 布局、分段式标签、类型色点（语义=deepseek 蓝 / 情景=琥珀 / 程序=绿）、
   轻量记忆卡片、策略单选卡、导入方式分段控件
-- 全部颜色/圆角/阴影改用 DSH 的 `--dsw-*` token（见 `THEME-TOKENS.md`），明暗主题自动适配
+- 全部颜色/圆角/阴影改用 DSH 的 `--dsw-*` token，明暗主题自动适配
 - 720px 以下单列布局；键盘导航（方向键/Home/End）、`aria-selected` / `aria-pressed`、
   可见焦点环、`prefers-reduced-motion`
 - 保留经典脚本包装、`apply`/`inject` 导出、槽位注册与全部 API 字段
