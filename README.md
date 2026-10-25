@@ -11,10 +11,10 @@
 - **个性化设置**：入口位置、自动注入开关、注入条数/字符上限、常驻预算、自动沉淀开关和轮数间隔
 - **常驻记忆**：标记 pinned 的记录优先注入 `<memory-rules>`，不占普通记忆条数，有独立字符预算
 - **对 Agent 隐藏**：标记 hidden 的记录仍保留在库中（管理界面可见、可编辑、可恢复），但不进入任何模型读取出口：自动注入（含常驻）、`memory_search`、`memory_list`、画像摘要与自动沉淀的提取上下文
-- **规则文件**：读写固定的 `~/.dsh/AGENTS.md`，保存前确认并备份，每次会话由 DSH 自动注入
+- **全局规则**：读写固定的 `~/.dsh/AGENTS.md`，保存前确认并备份，每次会话由 DSH 自动注入
 - **自动沉淀**：每隔指定轮数调用 LLM 提取最多 3 条事实，进入待确认队列，确认后写入
 - **模型工具**：`memory_write` / `memory_search` / `memory_list` / `memory_forget` / `memory_update_profile` / `memory_read_agents_md` / `memory_write_agents_md`
-- **自动上下文**：每轮把高价值记忆以 `<memory-context>` 注入请求（不写入会话日志，不污染历史）
+- **自动上下文**：每轮按任务相关性选择有效记忆注入请求；宿主记录注入快照，插件在下一步通过 surface replacement 撤回旧快照，原始事件仅留作审计
 - **用户画像**：Agent 通过 `memory_update_profile` 工具把记忆事实综合为 Markdown 画像摘要，展示在「画像」标签页；空状态引导用户在任意会话中让 Agent 生成；注入模式可选摘要 / 明细 / 混合
 
 > 包名与仓库名是 `dsh-memory-manager`；**运行时标识和数据目录仍是 `dsh-memory`**（`%APPDATA%\dsh-memory`），改名不影响已有记忆和 profile 配置。
@@ -37,7 +37,7 @@ dsh-memory-manager/
 ## 数据存放
 
 默认：`%APPDATA%\dsh-memory\memory.json`（Windows）或 `~/.local/share/dsh-memory/memory.json`。
-可用环境变量 `DSH_MEMORY_DIR` 覆盖。规则文件功能另行读写固定的 `~/.dsh/AGENTS.md`，写入前备份到同目录。
+可用环境变量 `DSH_MEMORY_DIR` 覆盖。全局规则功能另行读写固定的 `~/.dsh/AGENTS.md`，写入前备份到同目录。
 
 文件结构：
 
@@ -58,6 +58,70 @@ dsh-memory-manager/
   ]
 }
 ```
+
+## 第一阶段：项目、来源与有效性（2026-10-26）
+
+### 项目边界与旧数据
+
+- 项目身份来自**调用会话创建时的绝对目录**，规范化后生成 `projectId`；Windows 路径统一大小写。不是插件进程的当前目录，也不是最近一个会话的目录。切换工作子目录不改变归属；不同根目录/工作树分别隔离，目录搬迁需显式认领。
+- 模型自动注入、搜索、列表、提取已有事实上下文以及画像，都只使用**全局 + 当前项目**的有效可见记录。缺少会话上下文时只读全局，不能由 Agent 指定另一个 `projectId` 越界读取。
+- 旧 `scope=project` 记录如果没有 `projectId`，仍保留、可管理，但不提供给模型。打开“项目与事实状态筛选 → 待认领的旧项目记录”，编辑时选择已登记项目或填写项目绝对路径，保存即确认归属；不会自动猜测。
+- 存储标识仍是 `dsh-memory`，schema `version: 1` 不变；新增字段为兼容性扩展，不重写现有事实。导出包含项目目录表 `projects`、全局画像 `profile` 和分项目画像 `profiles`。
+
+### 来源、时间与冲突
+
+| 字段 | 含义 |
+|---|---|
+| `projectId` | 项目身份；全局记录为空，旧项目记录为空表示尚未认领 |
+| `evidence` | 保存的用户原句；没有原句时不伪造证据 |
+| `sourceSessionId / sourceMessageId / sourceEventSeq` | 来源会话、消息、事件位置引用 |
+| `observedAt / confirmation` | 观察时间、手动输入/用户批准/Agent 记录等确认方式 |
+| `evidenceRefs` | 合并等派生事实依赖的记录 ID；来源隐藏或删除后派生记录停止提供给模型 |
+| `occurredAt` | 事实发生时间，不等于记录编辑时间 |
+| `validFrom / validUntil` | 生效/失效时间，UTC epoch 毫秒；区间为 `[validFrom, validUntil)`，空值代表未限定 |
+| `conditions` | 适用条件；人物/关系沿用 `person / relationship` |
+| `status / supersededBy` | active（当前）、historical（历史）、conflict（待确认）、superseded（被取代）及取代记录引用 |
+| `injectionCount / lastInjectedAt` | 实际注入明细的次数/最近时间，与主动搜索的 `useCount / lastUsedAt` 分开 |
+
+时间输入在界面中使用浏览器本地时间，保存为 UTC 毫秒。未生效、过期、历史、被取代和待确认冲突不进入模型出口；可见性独立判断，**恢复可见不等于恢复有效**。
+
+相同项目/主体/关系/条件/结构化路径下的当前多值事实会暂停提供给模型，等待审阅；对象、条件不同或有效期不重叠的事实可并存。审阅中可明确选择“以此条取代本组其他记录”，保留旧记录而不是按更新时间自动覆盖。此检测是结构化规则，不是通用自然语言冲突识别。
+
+“查看依据”显示保存的原句、来源引用及合并前的关联记录，不自动读取整段聊天。旧记录无来源、原会话未加载/已删除时不能视为已核实；手动改写后的原句也不自动证明新陈述。合并重复项现在保留其余副本为历史记录，并建立来源依赖；不会把隐藏记录的标签合入可见记录。
+
+### 分范围画像与相关性注入
+
+- 全局画像只总结全局事实；项目画像只总结全局 + 对应项目事实。选择“画像范围”查看，项目画像须在该项目会话中生成。没有可用项目画像时回退范围内相关明细，不借用其他项目画像。
+- 画像保存范围快照与事实指纹；隐藏、状态/条件变化、有效期届满等会使摘要不可注入。旧画像没有范围清单时保留显示并标记待更新。
+- `memory_update_profile` 增加 `scope`（默认 global）、`sourceIds` 与 `basedOnSnapshot`。全局画像先读 `memory_list(scope=global)`；项目画像先读不带 scope 过滤的列表（全局 + 当前项目），提交该范围返回的 `snapshot`。只有匹配最新快照并附非空、当前有效的来源 ID，画像才可注入；其他项目、隐藏/过期/冲突来源不能引用。`scopeRecordIds` 是范围清单，不等于实际引用或完整阅读证明；`sourceIds` 是 Agent 声明使用的来源，不是语义真实性证明。
+- 乐观 `basedOnRevision` 校验保留，隐藏操作不被阻塞；有效集因时间变化时同样更新版本。新增快照含进程随机 epoch、范围、事实指纹与版本，不能跨重启重用。旧客户端不附快照/来源时仍可保存管理草稿，但草稿保持 stale、不进入模型，不能借新指纹洗白旧内容。
+- 常驻记录仍使用独立预算；普通明细按当前用户问题检索并排序，按完整条目装入字符预算，不从限定条件中间截断。摘要模式提供范围内概览，明细/混合模式提供相关事实。检索仍是 BM25 风格词法匹配，没有加入向量服务。
+- `memory_list` 返回 `truncated`；结果被截断时不得声称已读完整记忆库。分页与更完整的渐进读取属于第二阶段。
+- pre-step 优先使用本次待提交的用户消息检索，提交历史仅作后备。每步先用标准 Session surface replacement 撤回旧插件注入，再提供当前快照；原始日志不删除，撤回标记不会被重复替换。隐藏不能抹去模型已读过的信息、旧工具结果、用户/助手引用或已生成的会话摘要，不宣称能清除历史知识。
+
+### 验证与效果评测
+
+```sh
+node --check lib/index.js
+node --check lib/shared.js
+node --check lib/client.js
+node test/p0-tests.mjs
+node test/p1-tests.mjs
+node test/p1-client-tests.mjs
+node test/phase1-tests.mjs
+node verify-p0-fixes.mjs
+node test/phase1-eval.mjs
+node test/phase1-live-eval-tests.mjs
+node check-demo.mjs "<现有试玩页的带 token URL>"
+```
+
+回归基线：P0 **27/27**、宿主 P1 **10/10**、客户端 **20/20**、第一阶段集成 **19/19**、定向验证 **7 项**。三层合成评测包括基础回忆、跨会话理解和关联/澄清证据，共 **12 个场景**；正例计算标准 recall@6、命中率与 MRR，负例单独计拒答成功率。当前固定合成集正例 recall@6/MRR 均为 1，项目/隐藏/过期误用为 0；高频无关干扰的受控注入对比为旧策略 0、新策略 1，**不代表真实任务总体效果**。
+
+默认评测不调用真实模型；只验证工具/注入与确定性日期规则，不把“证据已召回”宣称为模型会主动提醒。可选真实模型模式使用用户显式配置的 OpenAI 兼容端点，通过真实记忆工具进行最多 6 步只读交互，记录回答模式检查、工具轨迹、API 用量与延迟：
+
+- 设置 `DSH_MEMORY_EVAL_LIVE=1`、`DSH_MEMORY_EVAL_BASE_URL`（例如用户自己的兼容服务 `/v1` 地址）、`DSH_MEMORY_EVAL_MODEL`，按需设置 `DSH_MEMORY_EVAL_API_KEY`，再运行 `node test/phase1-eval.mjs <报告路径>`。
+- 无默认外发端点；数据均为脚本内合成案例，不读真实记忆库。可选适配器已用本地合成提供方验证，但**未运行真实模型质量评分**。
+- 不提供密钥时不附 Authorization。不要把密钥写进仓库或报告。回答模式检查不能替代独立语义审核；未经测量的无依据断言率/真实 token/费用不报告为零。工具提示词开销对比记录精确 schema 字符数，不冒充模型 tokenizer 的 token 数。
 
 ## 四种策略
 
@@ -105,10 +169,11 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/memory/state` | 读取设置 + 全部记忆 |
-| POST | `/api/memory/rpc` | `{action, payload}`，action ∈ add/update/delete/clear/settings/search/import/export/approve/reject |
+| POST | `/api/memory/rpc` | `{action, payload}`，action ∈ add/update/delete/clear/settings/search/import/export/preview-import/approve/reject/register-project/supersede/merge-duplicates |
 | GET | `/api/memory/export` | 下载整库 JSON |
-| GET / POST | `/api/memory/agents-md` | 读取 / 保存固定规则文件（写入前备份） |
+| GET / POST | `/api/memory/agents-md` | 读取 / 保存固定全局规则（写入前备份） |
 | GET | `/api/memory/pending` | 查询自动提取待确认队列（宿主内存态） |
+| GET / POST | `/api/memory/profile` | 分范围画像；GET 用 `?projectId=` 选择，POST 支持 `projectId / basedOnRevision / basedOnSnapshot / sourceIds` |
 
 路由只对 owner Peer 开放，浏览器同源 cookie 即可（`ctx.connection.fetch.register`）。
 
@@ -151,7 +216,7 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 
 ### 「说明」标签页
 
-当前标签顺序为「记忆 / 新增 / 策略与设置 / 导入导出 / 规则文件 / 说明」；「说明」用于解释技术名词与使用方法：
+当前标签顺序为「记忆 / 画像 / 全局规则 / 设置 / 说明」；新增与审阅使用弹窗，导入导出位于设置；「说明」用于解释技术名词与使用方法：
 
 - **这个面板做什么**：长期记忆与会话轨迹的区别、两个写入入口
 - **快速上手**：4 步（让 Agent 记 / 手动添加 / 使用记忆 / 维护备份）
@@ -253,17 +318,17 @@ set DSH_HOME=%USERPROFILE%\.dsh-test-home
 
 | 项 | 实现 |
 |---|---|
-| **R05 导航收敛** | 7 个标签收敛为 5 个：记忆 / 画像 / 规则文件 / 设置 / 说明；「新增」内联到记忆页；「导入导出」移入设置 |
+| **R05 导航收敛** | 7 个标签收敛为 5 个：记忆 / 画像 / 全局规则 / 设置 / 说明；「新增」内联到记忆页；「导入导出」移入设置 |
 | **R06 表单** | 保存中禁用 + error 状态；空内容拦截；标签支持中英文逗号；显示实际生效格式；切标签脏表单确认 |
 | **R07 窄屏筛选折叠** | 高级筛选折叠为「筛选（N）」按钮；标签/下拉宽度 100%；无横向溢出 |
 | **R08 注入追踪** | `digest` 返回 `{text, ledger}`（pinned/regular 条数、字符数、省略数） |
 | **R09 重复/矛盾审阅** | 「质量」按钮检测精确重复和同路径多值，提供保留最新/合并标签/忽略操作 |
 | **R10 检索修复** | CJK bigram 不再跨标点；单字母技术词保留；BM25 长度归一化修复 |
 | **R11 提取窗口** | 提取覆盖间隔内所有轮次（buffer 累积）；候选带 `evidence` 来源 |
-| **R14 规则文件审批** | 保存前预览差异；工具描述加用户确认要求；幂等检查 |
+| **R14 全局规则审批** | 保存前预览差异；工具描述加用户确认要求；幂等检查 |
 | **R15 渐进模块化** | 宿主端校验/归一化/渲染/检索函数拆到 `lib/shared.js`（相对 import，零依赖不变） |
 | **R17 变更同步** | 10s 轮询 state 差异自动刷新面板（简化模式不轮询） |
-| **R19 边界说明** | 注入开关文案、规则文件说明、帮助页 Term 均已更新 |
+| **R19 边界说明** | 注入开关文案、全局规则说明、帮助页 Term 均已更新 |
 
 验证：Codex 报告 + 独立复核：语法 × 3、P0 回归 17/17、P1 新增 9/9、客户端模拟 5/5、浏览器 5 标签 + 44 卡 + 窄屏筛选折叠。
 

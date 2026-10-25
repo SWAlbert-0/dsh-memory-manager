@@ -111,7 +111,7 @@ try {
   vm.runInNewContext(instrumented, { window: { __ModuleLoader__: { load: ({ factory }) => { exported = factory(() => react); } } } });
   const p = exported.probe;
   const records = [{ id: '1', text: ' 相同 ', category: 'a', key: 'k', value: '一' }, { id: '2', text: '相同', category: 'a', key: 'k', value: '二' }];
-  const groups = p.qualityGroups(records); assert.equal(groups.length, 2); assert.equal(groups[0].type, 'duplicate'); assert.equal(groups[1].type, 'conflict');
+  const groups = p.qualityGroups(records); assert.equal(groups.length, 1); assert.equal(groups[0].type, 'conflict'); // Different structured values are not exact duplicates.
   assert.deepEqual(Array.from(p.lineDiff('旧\n相同', '新\n相同')), ['- 旧', '+ 新', '  相同']);
   assert.equal(p.effectiveStrategy({ tags: ['a'] }, 'enhanced', [{ field: 'tag', value: 'a', strategy: 'json' }]), 'json');
  });

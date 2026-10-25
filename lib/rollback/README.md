@@ -26,6 +26,8 @@
 | stage 17 | `client.stage17-before-design-p2.js` | 2026-10-24 23:06 | 设计评审 P2（筛选文案 / 空状态 / 设置 / 导入 / 表单 / 命中区 / 路径）之前 |
 | stage 18 | `client.stage18-before-ui-modal.js` | 2026-10-24 23:26 | 可见性三态 / 新增与审阅弹窗 / 高级选项样式之前 |
 
+客户端 stage 19：`client.stage19-before-global-rules-label.js`，将「规则文件」改名为「全局规则」之前。
+
 ## 宿主端快照（lib/index.js）
 
 | 阶段 | 文件 | 时间 | 说明 |
@@ -40,6 +42,14 @@
 | host stage 6 | `host.stage6-before-visibility.js` | 2026-10-24 21:33 | 记录 `visibility` 字段（visible / hidden）之前 |
 | host stage 7 | `host.stage7-before-profile-revision.js` | 2026-10-24 21:51 | 画像写入 revision 乐观锁之前 |
 | host stage 8 | `host.stage8-before-hidden-boundaries.js` | 2026-10-24 22:03 | hidden 边界收紧（质量合并标签 / RPC 搜索 / 工具删除）之前 |
+
+## 第一阶段基线
+
+- `client.stage20-before-phase1.js`：项目归属、来源依据与时间/冲突管理界面之前（含「全局规则」改名）。
+
+- `host.stage9-before-phase1.js`：C3-01～C3-05 宿主改造之前。
+- `shared.stage0-before-phase1.js`：项目/证据/时间字段与相关性选择之前，须与对应宿主快照一同恢复。
+- 恢复旧版会丢失项目隔离和有效期语义；保留新字段的数据不得继续用于旧版模型读取。
 
 ## 回退命令
 

@@ -263,18 +263,21 @@ try {
     assert.equal(probe.normalizeRecord({ scope: 'global' }, previous).scope, 'global');
     assert.equal(probe.normalizeRecord({ text: 'updated' }, previous).scope, 'project');
   });
-  await test('R01 search/list scope filters isolate results; no scope retains existing behavior', async () => {
+  await test('R01/C3 scope filters include only global plus caller project; unbound legacy records stay private', async () => {
     const { probe } = await isolated(); const s = probe.getState();
-    s.memories = [record(probe, 'g', 'common fact', { scope: 'global' }), record(probe, 'p', 'common fact', { scope: 'project' })];
-    const ctx = host(); probe.registerTools(ctx);
+    const { project } = await rpc(probe, 'register-project', { path: '/test/project' });
+    s.memories = [record(probe, 'g', 'common fact', { scope: 'global' }), record(probe, 'p', 'common fact', { scope: 'project', projectId: project.id }), record(probe, 'legacy', 'common legacy', { scope: 'project' })];
+    const ctx = host(); ctx.sessions = { get: () => ({ id: 'session', header: { cwd: '/test/project' } }) }; probe.registerTools(ctx);
+    const exec = { agent: { id: 'session' } };
     for (const name of ['memory_search', 'memory_list']) {
       const tool = ctx.registeredTools.get(name);
       assert.deepEqual(tool.parameters.properties.scope.enum, ['global', 'project']);
       for (const scope of ['global', 'project']) {
-        const result = await tool.execute({ query: 'common', scope });
+        const result = await tool.execute({ query: 'common', scope }, exec);
         assert.equal(result.memories.length, 1); assert.equal(result.memories[0].scope, scope);
       }
-      assert.equal((await tool.execute({ query: 'common' })).memories.length, 2);
+      assert.equal((await tool.execute({ query: 'common' }, exec)).memories.length, 2);
+      assert.equal((await tool.execute({ query: 'common' })).memories.length, 1);
     }
   });
   await test('V01 digest excludes hidden records before pinned; pinned+hidden is never injected', async () => {
@@ -338,7 +341,7 @@ try {
     const older = await isolated(seed(50));
     assert.equal(older.probe.getState().profile.stale, true);
     const newer = await isolated(seed(200));
-    assert.equal(newer.probe.getState().profile.stale, false);
+    assert.equal(newer.probe.getState().profile.stale, true); // Legacy summary lacks a scope/evidence manifest.
   });
   await test('V05 extraction context omits hidden facts', async () => {
     const { probe } = await isolated(); const s = probe.getState();
@@ -397,7 +400,11 @@ try {
     const current = (await list.execute({})).revision;
     assert.ok(current > base);
     const accepted = await update.execute({ content: 'CLEAN_PROFILE', basedOnRevision: current });
-    assert.equal(accepted.ok, true); assert.equal(s.profile.stale, false); assert.equal(s.profile.content, 'CLEAN_PROFILE');
+    assert.equal(accepted.ok, true); assert.equal(s.profile.stale, true); assert.equal(s.profile.content, 'CLEAN_PROFILE'); // Compatibility save is an unverified draft, never injectable.
+    await rpc(probe, 'add', { id: 'public', text: 'PUBLIC_FACT' });
+    const fresh = await list.execute({ scope: 'global' });
+    const verified = await update.execute({ content: 'PUBLIC_PROFILE', basedOnRevision: fresh.revision, basedOnSnapshot: fresh.snapshot, sourceIds: ['public'] });
+    assert.equal(verified.ok, true); assert.equal(s.profile.stale, false); assert.equal(s.profile.verified, true);
     const res = await ctx.routes.get('/api/memory/profile').fetch(new Request('http://isolated/api/memory/profile', { method: 'POST', body: JSON.stringify({ content: 'HTTP_LEAK', basedOnRevision: base }) }));
     assert.equal(res.status, 409);
   });

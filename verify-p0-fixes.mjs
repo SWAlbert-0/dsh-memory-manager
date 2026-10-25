@@ -17,15 +17,16 @@ const ctx = {
   logger: { info() {}, error() {}, warn() {} },
   tools: { register: (t) => tools.set(t.name, t) },
   connection: { fetch: { register: (r) => routes.set(r.path, r) } },
+  sessions: { get: () => ({ id: 'synthetic-p0', header: { cwd: root } }) },
   on() {},
   effect(fn) { if (typeof fn === 'function') fn(); },
   llm: null,
 };
 mod.apply(ctx);
 
-const memoryWrite = (args) => tools.get('memory_write').execute(args, { agent: {}, signal: { aborted: false } });
-const memorySearch = (args) => tools.get('memory_search').execute(args, { agent: {}, signal: { aborted: false } });
-const memoryForget = (args) => tools.get('memory_forget').execute(args, { agent: {}, signal: { aborted: false } });
+const memoryWrite = (args) => tools.get('memory_write').execute(args, { agent: { id: 'synthetic-p0' }, signal: { aborted: false } });
+const memorySearch = (args) => tools.get('memory_search').execute(args, { agent: { id: 'synthetic-p0' }, signal: { aborted: false } });
+const memoryForget = (args) => tools.get('memory_forget').execute(args, { agent: { id: 'synthetic-p0' }, signal: { aborted: false } });
 const rpc = async (action, payload) => {
   const route = routes.get('/api/memory/rpc');
   const req = new Request('http://localhost/api/memory/rpc', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, payload }) });
