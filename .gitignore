@@ -17,3 +17,6 @@ tools-lib.js
 
 # 一次性迁移脚本（含本机绝对路径）
 cleanup-old-memory.mjs
+
+# 开发计划仅保留在本地
+/开发计划.md
