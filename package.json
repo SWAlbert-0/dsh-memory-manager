@@ -1,5 +1,5 @@
 {
-  "name": "dsh-memory-manager",
+  "name": "@albert-wu/dsh-memory-manager",
   "version": "0.1.0",
   "description": "DeepSeek Harness 长期记忆管理插件：Web 管理面板、自动注入、四种策略、用户画像、自动沉淀与 AGENTS.md 桥接",
   "type": "module",
@@ -7,15 +7,31 @@
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
   },
   "files": [
     "lib/index.js",
     "lib/client.js",
     "lib/shared.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "scripts/check-release.mjs",
     "README.md",
     "LICENSE"
   ],
+  "scripts": {
+    "check:release": "node scripts/check-release.mjs",
+    "test": "node test/p0-tests.mjs && node test/p1-tests.mjs && node test/p1-client-tests.mjs && node test/phase1-tests.mjs && node verify-p0-fixes.mjs",
+    "prepack": "npm run check:release"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest"
+  },
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -36,6 +52,9 @@
   "author": "SWAlbert-0",
   "license": "MIT",
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web"
     }

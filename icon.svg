@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Memory Manager">
+  <rect x="3" y="3" width="58" height="58" rx="15" fill="#315cd6"/>
+  <path d="M20 15h27v29M15 21h27v29H15z" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M23 30h11M23 37h7M23 44h11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="47" cy="17" r="5" fill="#fff"/>
+</svg>

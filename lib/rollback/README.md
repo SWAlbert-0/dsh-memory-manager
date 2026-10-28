@@ -28,6 +28,12 @@
 
 客户端 stage 19：`client.stage19-before-global-rules-label.js`，将「规则文件」改名为「全局规则」之前。
 
+客户端 stage 21：`client.stage21-before-information-design.js`，记忆列表信息层级、按需详情、统一筛选与设置分类重设计之前。
+
+安装清单基线：`package.stage0-before-bundle.json`，补齐插件管理器所需的 bundle patch、展示元数据与图标之前。此变更不修改宿主协议或记忆数据。
+
+npm 作用域迁移基线：`client.stage22-before-npm-scope.js`、`package.stage1-before-npm-scope.json`、`patch.stage0-before-npm-scope.yml`。发布包名改为 `@albert-wu/dsh-memory-manager`，运行时标识及存储目录保持 `dsh-memory`，旧快照不能单独混用。
+
 ## 宿主端快照（lib/index.js）
 
 | 阶段 | 文件 | 时间 | 说明 |
@@ -69,7 +75,7 @@ node --check lib\index.js
 
 ## 说明
 
-- **`client.js` 第 2 行的 bundle id 必须与 `package.json` 的 `name` 一致**（当前为 `dsh-memory-manager`）。回退到 2026-10-24 改名之前的快照后，需把该行改成 `id: "dsh-memory-manager"`，否则客户端会报 `duplicate factory registration` 且入口不激活。
+- **`client.js` 第 2 行的 bundle id 必须与 `package.json` 的 `name` 一致**（当前为 `@albert-wu/dsh-memory-manager`）。恢复旧快照后，必须同步工厂 ID、包名和 bundle patch；沿用当前 npm 包名时，将该行设为 `id: "@albert-wu/dsh-memory-manager"`，否则入口可能不激活或出现工厂注册冲突。
 - 快照只包含代码；存储数据（`%APPDATA%\dsh-memory\memory.json`）不会被任何回退操作修改。
 - **回退到 `client.stage12` / `host.stage6` 之前的快照会丢失 `visibility` 语义**：旧代码不认识 hidden 字段，会把隐藏记录当作可见记录注入和检索。若库中已有 hidden 记录，回退前请先备份，回退后不要把该库继续用于隐私场景。
 - 新增阶段时按 `client.stageN-before-<改动名>.js` / `host.stageN-before-<改动名>.js` 命名，并在上表补一行。
